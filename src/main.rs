@@ -1,24 +1,18 @@
 use bevy::prelude::*;
-use bevy::input::mouse::MouseWheel;
 use rand::Rng;
+
+// import camera
+mod camera;
+use camera::{OrbitCamPlugin, OrbitCamera};
 
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(OrbitCamPlugin)
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, setup)
-        .add_systems(Update, (update, ui_button, ui_coordinates))
+        .add_systems(Update, (ui_button, ui_coordinates))
         .run()
-}
-
-// camera component
-#[derive(Component, Debug)]
-struct Camera {
-    radius: f32,
-    speed: f32,
-    angle: f32,
-    v_angle: f32,
-    is_dragging: bool,
 }
 
 #[derive(Component)]
@@ -27,7 +21,7 @@ struct LatLong {
     longitude: f32,
 }
 
-// UI
+// UI components (temp)
 #[derive(Component)]
 struct RandomizeButton;
 #[derive(Component)]
@@ -92,17 +86,12 @@ fn setup(
         Transform::from_xyz(50.0, 50.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
-    // spawn camera 
+    // spawn camera
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-        Camera {
-            radius: 15.0,           // set initial orbit radius
-            speed: 0.5,             // orbit speed
-            angle: 0.0,             // starting angle
-            v_angle: 0.3,           // starting angle (vertical)
-            is_dragging: false,
-        },
+        OrbitCamera::new(15.0, 0.5)
+            .with_target(Vec3::ZERO)
     ));
 
     // create UI for controls and coordinate display
@@ -157,52 +146,6 @@ fn setup(
                 CoordinateDisplay,
             ));
         });
-}
-
-// update
-fn update(
-    mut camera_query: Query<(&mut Transform, &mut Camera)>,
-    mouse_buttons: Res<ButtonInput<MouseButton>>,
-    mut mouse_motion: EventReader<CursorMoved>,
-    mut scroll_events: EventReader<MouseWheel>,
-) {
-    for (mut transform, mut camera) in camera_query.iter_mut() {
-        // handle mouse drag
-        if mouse_buttons.just_pressed(MouseButton::Right) {
-            camera.is_dragging = true;
-        }
-        if mouse_buttons.just_released(MouseButton::Right) {
-            camera.is_dragging = false;
-        }
-
-        // update camera angles
-        if camera.is_dragging {
-            for motion in mouse_motion.read() {
-                if let Some(delta) = motion.delta {
-                    camera.angle += delta.x * camera.speed * 0.01;
-                    camera.v_angle += delta.y * camera.speed * 0.01;
-                }
-                // clamp pitch
-                camera.v_angle = camera.v_angle.clamp(-1.5, 1.5);
-            }
-        }
-
-        // handle mouse scroll
-        for scroll in scroll_events.read() {
-            camera.radius -= scroll.y * 2.0;
-            camera.radius = camera.radius.clamp(3.0, 50.0);
-        }
-
-        // convert spherical to cartesian coordinates
-        // https://en.wikipedia.org/wiki/Spherical_coordinate_system
-        let x = camera.radius * camera.v_angle.cos() * camera.angle.cos();
-        let y = camera.radius * camera.v_angle.sin();
-        let z = camera.radius * camera.v_angle.cos() * camera.angle.sin();
-        
-        // move camera
-        transform.translation = Vec3::new(x, y, z);
-        transform.look_at(Vec3::ZERO, Vec3::Y);
-    }
 }
 
 fn ui_button(
