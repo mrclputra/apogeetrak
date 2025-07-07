@@ -1,22 +1,22 @@
 use bevy::prelude::*;
-use rand::Rng;
 
 // import camera
-mod camera;
-use camera::{OrbitCamPlugin, OrbitCamera};
+mod systems;
+use systems::camera::{OrbitCamPlugin, OrbitCamera};
+use systems::ui::GlobeUIPlugin;
 
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(OrbitCamPlugin)
+        .add_plugins(GlobeUIPlugin)
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, setup)
-        .add_systems(Update, (ui_button, ui_coordinates))
         .run()
 }
 
 #[derive(Component)]
-struct LatLong {
+pub struct LatLong {
     latitude: f32,
     longitude: f32,
 }
@@ -93,95 +93,4 @@ fn setup(
         OrbitCamera::new(15.0, 0.5)
             .with_target(Vec3::ZERO)
     ));
-
-    // create UI for controls and coordinate display
-    commands
-        .spawn((
-            Node {
-                width: Val::Percent(100.0),
-                height: Val::Percent(100.0),
-                flex_direction: FlexDirection::Column,
-                align_items: AlignItems::Start,
-                justify_content: JustifyContent::Start,
-                padding: UiRect::all(Val::Px(20.0)),
-                ..default()
-            },
-            BackgroundColor(Color::NONE),
-        ))
-        .with_children(|parent| {
-            // button to randomize marker position
-            parent
-                .spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(150.0),
-                        height: Val::Px(30.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        margin: UiRect::bottom(Val::Px(10.0)),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.2, 0.4, 0.8)),
-                    RandomizeButton,
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new("Random Location"),
-                        TextFont {
-                            font_size: 12.0,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                });
-
-            // text display for current coordinates
-            parent.spawn((
-                Text::new("Lat: 0.0°, Lon: 0.0°"),
-                TextFont {
-                    font_size: 12.0,
-                    ..default()
-                },
-                TextColor(Color::WHITE),
-                CoordinateDisplay,
-            ));
-        });
-}
-
-fn ui_button(
-    mut interaction_query: Query<&Interaction, (Changed<Interaction>, With<RandomizeButton>)>,
-    mut marker_query: Query<(&mut Transform, &mut LatLong)>,
-) {
-    for interaction in &mut interaction_query {
-        if *interaction == Interaction::Pressed {
-            // generate random lat/lon coordinates
-            let mut rng = rand::rng();
-            let new_lat = rng.random_range(-90.0..=90.0);
-            let new_lon = rng.random_range(-180.0..=180.0);
-            
-            // update the marker position
-            for (mut transform, mut marker) in marker_query.iter_mut() {
-                marker.latitude = new_lat;
-                marker.longitude = new_lon;
-                
-                // position marker slightly above globe surface to avoid z-fighting
-                transform.translation = latlon_to_pos(new_lat, new_lon, 5.0);
-            }
-        }
-    }
-}
-
-fn ui_coordinates(
-    marker_query: Query<&LatLong>,
-    mut text_query: Query<&mut Text, With<CoordinateDisplay>>,
-) {
-    if let Ok(marker) = marker_query.single() {
-        if let Ok(mut text) = text_query.single_mut() {
-            text.0 = format!(
-                "Lat: {:.1}, Lon: {:.1}", 
-                marker.latitude, 
-                marker.longitude
-            );
-        }
-    }
 }
