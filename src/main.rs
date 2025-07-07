@@ -23,22 +23,27 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    let globe_size = 5.0;
+    // let globe_size = 5.0;
+
     commands.spawn((
-        Mesh3d(meshes.add(Cuboid::new(globe_size, globe_size, globe_size))),
-        MeshMaterial3d(materials.add(Color::srgb_u8(124, 144, 255))),
+        Mesh3d(meshes.add(Sphere::new(5.0))),
+        MeshMaterial3d(materials.add(StandardMaterial {
+            base_color: Srgba::hex("#ffffff").unwrap().into(),
+            metallic: 0.0,
+            perceptual_roughness: 0.5,
+            ..default()
+        })),
         Transform::from_xyz(0.0, 0.0, 0.0),
     ));
 
     // sun light
     // need to make it based on real sun position
     commands.spawn((
-        PointLight {
-            shadows_enabled: true,
-            intensity: 2000.0,
+        DirectionalLight {
+            illuminance: 1_500.,
             ..default()
         },
-        Transform::from_xyz(4.0, 8.0, 4.0),
+        Transform::from_xyz(50.0, 50.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
     // spawn camera 
