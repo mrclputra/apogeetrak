@@ -1,5 +1,14 @@
+use bevy::prelude::*;
 use reqwest::Error;
 use reqwest::header::USER_AGENT;
+
+pub struct TlePlugin;
+
+impl Plugin for TlePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, fetch_data);
+    }
+}
 
 #[derive(Debug)]
 struct Satellite {
@@ -15,7 +24,7 @@ struct Satellite {
 
     // keep raw TLE lines for reference if needed
     line1: String,
-    line2: String
+    line2: String,
 }
 
 impl Satellite {
@@ -55,20 +64,58 @@ impl Satellite {
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
+// system to fetch TLE data from API
+fn fetch_data() {
+    let task = std::thread::spawn(|| {
+        tokio::runtime::Runtime::new().unwrap().block_on(async {
+            fetch_satellites().await
+        })
+    });
+
+    // block briefly to get data
+    // need to implement proper async handling in the future
+    match task.join() {
+        Ok(Ok(satellites)) => {
+            println!("Found {} navigation satellites in orbit!\n", satellites.len());
+
+            for (i, satellite) in satellites.iter().take(10).enumerate() {
+                println!("{}. {}", i + 1, satellite.name);
+                println!("   NORAD ID: {}", satellite.norad_id);
+                println!("   INTL ID: {}", satellite.intl_id);
+                println!("   Launch: {}-{:03} (Year-Number)", satellite.launch_year, satellite.launch_number);
+                println!("   Inclination: {:.2}°", satellite.inclination);
+                println!("   Mean Motion: {:.2} rev/day", satellite.mean_motion);
+                println!("   Data Epoch: Year {} Day {:.2}", satellite.epoch_year, satellite.epoch_day);
+                println!();
+            }
+
+            if satellites.len() > 10 {
+                println!("... and {} more entries", satellites.len() - 10);
+            }
+        }
+        Ok(Err(e)) => {
+            error!("Failed to fetch TLE data: {}", e);
+        }
+        Err(_) => {
+            error!("Thread panicked while fetching TLE data");
+        }
+    }
+}
+
+// async function to actually fetch and parse the satellite data
+async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
     // call API here
     let url = "https://celestrak.org/NORAD/elements/gnss.txt";
 
     let response = reqwest::Client::new()
         .get(url)
-        .header(USER_AGENT, "gnss-satellite-tracker")
+        .header(USER_AGENT, "apogeetrak-satellite-tracker")
         .send()
         .await?
         .text()
         .await?;
 
-    // parse
+    // parse the TLE data
     let lines: Vec<&str> = response.lines().collect();
     let mut satellites: Vec<Satellite> = Vec::new();
 
@@ -80,21 +127,5 @@ async fn main() -> Result<(), Error> {
         }
     }
 
-    println!("Found {} navigation satellites in orbit!\n", satellites.len());
-
-    for (i, satellite) in satellites.iter().take(10).enumerate() {
-        println!("{}. {}", i + 1, satellite.name);
-        println!("   NORAD ID: {}", satellite.norad_id);
-        println!("   Launch: {}-{:03} (Year-Number)", satellite.launch_year, satellite.launch_number);
-        println!("   Inclination: {:.2}°", satellite.inclination);
-        println!("   Mean Motion: {:.2} rev/day", satellite.mean_motion);
-        println!("   Data Epoch: Year {} Day {:.2}", satellite.epoch_year, satellite.epoch_day);
-        println!();
-    }
-
-    if satellites.len() > 10 {
-        println!("... and {} more entries", satellites.len() - 10);
-    }
-
-    Ok(())
+    Ok(satellites)
 }
