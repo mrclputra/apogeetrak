@@ -4,13 +4,14 @@ use bevy::prelude::*;
 mod systems;
 use systems::camera::{OrbitCamPlugin, OrbitCamera};
 use systems::ui::GlobeUIPlugin;
-use systems::tle::*;
+// use systems::tle::TlePlugin;
 
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugins(OrbitCamPlugin)
         .add_plugins(GlobeUIPlugin)
+        // .add_plugins(TlePlugin)
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, setup)
         .run()
@@ -53,7 +54,7 @@ fn setup(
     commands.spawn((
         Mesh3d(meshes.add(Sphere::new(5.0).mesh().ico(32).unwrap())),
         MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Srgba::hex("#ffffff").unwrap().into(),
+            base_color: Srgba::hex("#0070a0").unwrap().into(),
             metallic: 0.0,
             perceptual_roughness: 0.5,
             ..default()
