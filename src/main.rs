@@ -1,4 +1,5 @@
 use bevy::{prelude::*, transform};
+use bevy::input::mouse::MouseWheel;
 
 fn main() -> bevy::app::AppExit {
     App::new()
@@ -14,7 +15,9 @@ fn main() -> bevy::app::AppExit {
 struct Camera {
     radius: f32,
     speed: f32,
-    angle: f32
+    angle: f32,
+    v_angle: f32,
+    is_dragging: bool,
 }
 
 // scene setup here
@@ -51,9 +54,11 @@ fn setup(
         Camera3d::default(),
         Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
         Camera {
-            radius: 15.0,  // set initial orbit radius
-            speed: 0.5,    // orbit speed
-            angle: 0.0,    // starting angle
+            radius: 15.0,           // set initial orbit radius
+            speed: 0.5,             // orbit speed
+            angle: 0.0,             // starting angle
+            v_angle: 0.3,           // starting angle (vertical)
+            is_dragging: false,
         },
     ));
 
@@ -62,18 +67,51 @@ fn setup(
 // update
 fn update(
     mut camera_query: Query<(&mut Transform, &mut Camera)>,
-    time: Res<Time>,
+    mouse_buttons: Res<ButtonInput<MouseButton>>,
+    mut mouse_motion: EventReader<CursorMoved>,
+    mut scroll_events: EventReader<MouseWheel>,
 ) {
     for (mut transform, mut camera) in camera_query.iter_mut() {
-        // increment the orbit angle based on time
-        camera.angle += camera.speed * time.delta_secs();
+        // handle mouse drag for camera rotation
+        if mouse_buttons.just_pressed(MouseButton::Right) {
+            camera.is_dragging = true;
+        }
+        if mouse_buttons.just_released(MouseButton::Right) {
+            camera.is_dragging = false;
+        }
+
+        // update camera angles when dragging
+        if camera.is_dragging {
+            for motion in mouse_motion.read() {
+                // convert mouse movement to angle changes
+                // negative delta_x rotates left/right (yaw)
+                // negative delta_y rotates up/down (pitch)
+                if let Some(delta) = motion.delta {
+                    camera.angle += delta.x * camera.speed * 0.01;
+                    camera.v_angle += delta.y * camera.speed * 0.01;
+                }
+                
+                // keep pitch within reasonable limits so we don't flip upside down
+                camera.v_angle = camera.v_angle.clamp(-1.5, 1.5);
+            }
+        }
+
+        // handle scroll wheel for zoom
+        for scroll in scroll_events.read() {
+            // scroll up = zoom in (decrease radius)
+            // scroll down = zoom out (increase radius)
+            camera.radius -= scroll.y * 2.0;
+            // keep zoom within sensible bounds
+            camera.radius = camera.radius.clamp(3.0, 50.0);
+        }
+
+        // calculate camera position using spherical coordinates
+        // this gives us proper 3D orbital movement
+        let x = camera.radius * camera.v_angle.cos() * camera.angle.cos();
+        let y = camera.radius * camera.v_angle.sin();
+        let z = camera.radius * camera.v_angle.cos() * camera.angle.sin();
         
-        // calculate new position using circular motion
-        let x = camera.radius * camera.angle.cos();
-        let z = camera.radius * camera.angle.sin();
-        let y = 5.0; // keep camera slightly above for better view
-        
-        // move camera and keep it looking at the cube
+        // move camera and keep it looking at the globe
         transform.translation = Vec3::new(x, y, z);
         transform.look_at(Vec3::ZERO, Vec3::Y);
     }

@@ -150,7 +150,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "apogee"
+name = "apogeetrak"
 version = "0.1.0"
 dependencies = [
  "bevy",
