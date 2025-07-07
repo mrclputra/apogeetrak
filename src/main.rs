@@ -4,6 +4,7 @@ use bevy::prelude::*;
 mod systems;
 use systems::camera::{OrbitCamPlugin, OrbitCamera};
 use systems::ui::GlobeUIPlugin;
+use systems::tle::*;
 
 fn main() -> bevy::app::AppExit {
     App::new()
