@@ -11,7 +11,6 @@ impl Plugin for TlePlugin {
     }
 }
 
-#[derive(Debug)]
 struct Satellite {
     name: String,
     norad_id: u32,
@@ -140,7 +139,7 @@ fn fetch_data() {
                 satellites.len()
             );
 
-            for (i, satellite) in satellites.iter().enumerate() {
+            for (i, satellite) in satellites.iter().enumerate().take(7) {
                 println!("Satellite #{}", i + 1);
                 println!("  Name           : {}", satellite.name);
                 println!("  NORAD ID       : {}", satellite.norad_id);
@@ -166,9 +165,9 @@ fn fetch_data() {
                 println!();
             }
 
-            // if satellites.len() > 100 {
-            //     println!("... and {} more entries not displayed", satellites.len() - 100);
-            // }
+            if satellites.len() > 7 {
+                println!("... and {} more entries not displayed", satellites.len() - 7);
+            }
         }
         Ok(Err(e)) => {
             error!("Failed to fetch TLE data: {}", e);
