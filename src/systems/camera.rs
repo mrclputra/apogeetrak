@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use bevy::input::mouse::MouseWheel;
 
+use crate::EARTH_RADIUS;
+
 pub struct OrbitCamPlugin;
 
 impl Plugin for OrbitCamPlugin {
@@ -17,18 +19,24 @@ pub struct OrbitCamera {
     pub angle: f32,
     pub v_angle: f32,
     pub is_dragging: bool,
-    pub target: Vec3
+    pub target: Vec3,
+
+    pub min_radius: f32,
+    pub max_radius: f32,
 }
 
 impl Default for OrbitCamera {
     fn default() -> Self {
         Self {
             radius: 15.0,
-            speed: 0.5,
+            speed: 0.1,
             angle: 0.0,
             v_angle: 0.3,
             is_dragging: false,
             target: Vec3::ZERO,
+
+            min_radius: EARTH_RADIUS + 1000.0,
+            max_radius: EARTH_RADIUS + 20000.0
         }
     }
 }
@@ -37,7 +45,7 @@ impl OrbitCamera {
     pub fn new(radius: f32, speed: f32) -> Self {
         Self {
             radius,
-            speed, 
+            speed,
             ..default()
         }
     }
@@ -46,6 +54,15 @@ impl OrbitCamera {
     // to be used/implemented itf
     pub fn with_target(mut self, target: Vec3) -> Self {
         self.target = target;
+        self
+    }
+
+    // allow custom zoom limits
+    // to implement when switching targets
+    // TODO: FIX REFERENCE USAGE
+    pub fn with_zoom_limits(mut self, min_radius: f32, max_radius: f32) -> Self {
+        self.min_radius = min_radius;
+        self.max_radius = max_radius;
         self
     }
 
@@ -89,11 +106,13 @@ fn update(
 
         // handle mouse scroll
         for scroll in scroll_events.read() {
-            camera.radius -= scroll.y * 2.0;
-            camera.radius = camera.radius.clamp(3.0, 50.0);
+            // variable zoom speed
+            let zoom_speed = (camera.radius / 1000.0).max(300.0);
+            camera.radius -= scroll.y * zoom_speed;
+            camera.radius = camera.radius.clamp(camera.min_radius, camera.max_radius);
         }
 
-        // update camera position
+        // update camera position/orientation
         transform.translation = camera.calculate_position();
         transform.look_at(camera.target, Vec3::Y);
     }

@@ -6,6 +6,9 @@ use systems::camera::{OrbitCamPlugin, OrbitCamera};
 use systems::ui::GlobeUIPlugin;
 use systems::tle::TlePlugin;
 
+// WGS84
+const EARTH_RADIUS: f32 = 6378.0;
+
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -49,10 +52,8 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // let globe_size = 5.0;
-
     commands.spawn((
-        Mesh3d(meshes.add(Sphere::new(5.0).mesh().ico(32).unwrap())),
+        Mesh3d(meshes.add(Sphere::new(EARTH_RADIUS).mesh().ico(32).unwrap())),
         MeshMaterial3d(materials.add(StandardMaterial {
             base_color: Srgba::hex("#0070a0").unwrap().into(),
             metallic: 0.0,
@@ -64,14 +65,14 @@ fn setup(
 
     // test marker thing
     commands.spawn((
-        Mesh3d(meshes.add(Sphere::new(0.1).mesh().ico(8).unwrap())),
+        Mesh3d(meshes.add(Sphere::new(50.0).mesh().ico(8).unwrap())),
         MeshMaterial3d(materials.add(StandardMaterial {
             base_color: Srgba::hex("ff0000").unwrap().into(),
             metallic: 0.0,
             perceptual_roughness: 0.3,
             ..default()
         })),
-        Transform::from_translation(latlon_to_pos(0.0, 0.0, 5.0)),
+        Transform::from_translation(latlon_to_pos(0.0, 0.0, EARTH_RADIUS)),
         LatLong {
             latitude: 0.0,
             longitude: 0.0,
@@ -85,14 +86,14 @@ fn setup(
             illuminance: 1_500.,
             ..default()
         },
-        Transform::from_xyz(50.0, 50.0, 50.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Transform::from_xyz(50000.0, 50000.0, 50000.0).looking_at(Vec3::ZERO, Vec3::Y),
     ));
 
     // spawn camera
     commands.spawn((
         Camera3d::default(),
-        Transform::from_xyz(-2.5, 4.5, 9.0).looking_at(Vec3::ZERO, Vec3::Y),
-        OrbitCamera::new(15.0, 0.5)
+        Transform::from_xyz(-8000.0, 8000.0, 12000.0).looking_at(Vec3::ZERO, Vec3::Y),
+        OrbitCamera::new(15000.0, 0.3)
             .with_target(Vec3::ZERO)
     ));
 }

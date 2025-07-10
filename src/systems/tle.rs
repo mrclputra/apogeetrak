@@ -97,7 +97,7 @@ impl Satellite {
             .checked_add_signed(chrono::Duration::days((self.epoch_day - 1.0) as i64))?
             .and_time(
                 chrono::NaiveTime::from_num_seconds_from_midnight_opt(
-                    ((self.epoch_day.fract() * 24.0 * 3600.0) as u32), 0
+                    (self.epoch_day.fract() * 24.0 * 3600.0) as u32, 0
                 )?
             );
 
@@ -109,8 +109,8 @@ impl Satellite {
     }
 }
 
-// conver cartesian coordinates (x, y, z) to geodetic coordinates (lat, lon, alt)
-// used spherical approximation for this
+// convert cartesian coordinates (x, y, z) to geodetic coordinates (lat, lon, alt)
+// https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
 fn cartesian_to_geodetic(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
     let earth_radius = 6371.0;
 

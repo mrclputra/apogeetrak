@@ -17,7 +17,7 @@ pub struct RandomizeButton;
 #[derive(Component)]
 pub struct CoordinateDisplay;
 
-use crate::LatLong;
+use crate::{LatLong, EARTH_RADIUS};
 
 fn setup(mut commands: Commands) {
     commands
@@ -89,7 +89,7 @@ fn ui_randomize(
                 marker.latitude = new_lat;
                 marker.longitude = new_lon;
                 
-                transform.translation = crate::latlon_to_pos(new_lat, new_lon, 5.0);
+                transform.translation = crate::latlon_to_pos(new_lat, new_lon, EARTH_RADIUS);
             }
         }
     }
