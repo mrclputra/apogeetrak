@@ -20,38 +20,26 @@ fn main() -> bevy::app::AppExit {
         .run()
 }
 
-#[derive(Component)]
-pub struct LatLong {
-    latitude: f32,
-    longitude: f32,
-}
+// // convert lat/lon to 3D position (on surface)
+// fn latlon_to_pos(latitude: f32, longitude: f32, radius: f32) -> Vec3 {
+//     let lat_rad = latitude.to_radians();
+//     let lon_rad = longitude.to_radians();
 
-// UI components (temp)
-#[derive(Component)]
-struct RandomizeButton;
-#[derive(Component)]
-struct CoordinateDisplay;
-
-// convert latlon to cartesian
-// need to move this somewhere else
-fn latlon_to_pos(latitude: f32, longitude: f32, radius: f32) -> Vec3 {
-    let lat_rad = latitude.to_radians();
-    let lon_rad = longitude.to_radians();
-
-    // spherical to cartesian conversion
-    let x = radius * lat_rad.cos() * lon_rad.cos();
-    let y = radius * lat_rad.sin();
-    let z = radius * lat_rad.cos() * lon_rad.sin();
+//     // convert spherical coordinates to cartesian
+//     let x = radius * lat_rad.cos() * lon_rad.cos();
+//     let y = radius * lat_rad.sin();
+//     let z = radius * lat_rad.cos() * lon_rad.sin();
     
-    Vec3::new(x, y, z)
-}
+//     Vec3::new(x, y, z)
+// }
 
-// scene setup here
+// set up the main scene
 fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
+    // create the Earth sphere
     commands.spawn((
         Mesh3d(meshes.add(Sphere::new(EARTH_RADIUS).mesh().ico(32).unwrap())),
         MeshMaterial3d(materials.add(StandardMaterial {
@@ -61,22 +49,6 @@ fn setup(
             ..default()
         })),
         Transform::from_xyz(0.0, 0.0, 0.0),
-    ));
-
-    // test marker thing
-    commands.spawn((
-        Mesh3d(meshes.add(Sphere::new(50.0).mesh().ico(8).unwrap())),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Srgba::hex("ff0000").unwrap().into(),
-            metallic: 0.0,
-            perceptual_roughness: 0.3,
-            ..default()
-        })),
-        Transform::from_translation(latlon_to_pos(0.0, 0.0, EARTH_RADIUS)),
-        LatLong {
-            latitude: 0.0,
-            longitude: 0.0,
-        },
     ));
 
     // sun light
@@ -93,10 +65,7 @@ fn setup(
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(-8000.0, 8000.0, 12000.0).looking_at(Vec3::ZERO, Vec3::Y),
-        OrbitCamera::new(
-                            15000.0, 
-                            0.3, 
-                        )
+        OrbitCamera::new(15000.0, 0.3)
             .with_target(Vec3::ZERO)
             .with_zoom_limits(7000.0, 30000.0)
     ));

@@ -1,25 +1,22 @@
 use bevy::prelude::*;
-use rand::Rng;
 
 pub struct GlobeUIPlugin;
 
 impl Plugin for GlobeUIPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_systems(Startup, setup)
-            .add_systems(Update, (ui_randomize, ui_coordinates));
+        app.add_systems(Startup, setup)
+           .add_systems(Update, update_satellite_count);
     }
 }
 
-// UI components
+// UI component to display satellite count
 #[derive(Component)]
-pub struct RandomizeButton;
-#[derive(Component)]
-pub struct CoordinateDisplay;
+pub struct SatelliteCounter;
 
-use crate::{LatLong, EARTH_RADIUS};
+use crate::systems::tle::Satellite;
 
 fn setup(mut commands: Commands) {
+    // create UI container
     commands
         .spawn((
             Node {
@@ -34,78 +31,27 @@ fn setup(mut commands: Commands) {
             BackgroundColor(Color::NONE),
         ))
         .with_children(|parent| {
-            // button to randomize marker position
-            parent
-                .spawn((
-                    Button,
-                    Node {
-                        width: Val::Px(150.0),
-                        height: Val::Px(30.0),
-                        justify_content: JustifyContent::Center,
-                        align_items: AlignItems::Center,
-                        margin: UiRect::bottom(Val::Px(10.0)),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgb(0.2, 0.4, 0.8)),
-                    RandomizeButton,
-                ))
-                .with_children(|parent| {
-                    parent.spawn((
-                        Text::new("Random Location"),
-                        TextFont {
-                            font_size: 12.0,
-                            ..default()
-                        },
-                        TextColor(Color::WHITE),
-                    ));
-                });
-
-            // text display for current coordinates
+            // display satellite count
             parent.spawn((
-                Text::new("Lat: 0.0°, Lon: 0.0°"),
+                Text::new("Satellites: Loading..."),
                 TextFont {
-                    font_size: 12.0,
+                    font_size: 14.0,
                     ..default()
                 },
                 TextColor(Color::WHITE),
-                CoordinateDisplay,
+                SatelliteCounter,
             ));
         });
 }
 
-fn ui_randomize(
-    mut interaction_query: Query<&Interaction, (Changed<Interaction>, With<RandomizeButton>)>,
-    mut marker_query: Query<(&mut Transform, &mut LatLong)>,
+// update the satellite count display
+fn update_satellite_count(
+    satellite_query: Query<&Satellite>,
+    mut text_query: Query<&mut Text, With<SatelliteCounter>>,
 ) {
-    for interaction in &mut interaction_query {
-        if *interaction == Interaction::Pressed {
-            // generate random lat/lon coordinates
-            let mut rng = rand::rng();
-            let new_lat = rng.random_range(-90.0..=90.0);
-            let new_lon = rng.random_range(-180.0..=180.0);
-            
-            // update marker position
-            for (mut transform, mut marker) in marker_query.iter_mut() {
-                marker.latitude = new_lat;
-                marker.longitude = new_lon;
-                
-                transform.translation = crate::latlon_to_pos(new_lat, new_lon, EARTH_RADIUS);
-            }
-        }
-    }
-}
-
-fn ui_coordinates(
-    marker_query: Query<&LatLong>,
-    mut text_query: Query<&mut Text, With<CoordinateDisplay>>,
-) {
-    if let Ok(marker) = marker_query.single() {
-        if let Ok(mut text) = text_query.single_mut() {
-            text.0 = format!(
-                "Lat: {:.1}, Lon: {:.1}", 
-                marker.latitude, 
-                marker.longitude
-            );
-        }
+    let count = satellite_query.iter().count();
+    
+    if let Ok(mut text) = text_query.single_mut() {
+        text.0 = format!("Satellites: {}", count);
     }
 }
