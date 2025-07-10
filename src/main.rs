@@ -93,7 +93,11 @@ fn setup(
     commands.spawn((
         Camera3d::default(),
         Transform::from_xyz(-8000.0, 8000.0, 12000.0).looking_at(Vec3::ZERO, Vec3::Y),
-        OrbitCamera::new(15000.0, 0.3)
+        OrbitCamera::new(
+                            15000.0, 
+                            0.3, 
+                        )
             .with_target(Vec3::ZERO)
+            .with_zoom_limits(7000.0, 30000.0)
     ));
 }

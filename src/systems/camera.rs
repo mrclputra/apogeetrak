@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 use bevy::input::mouse::MouseWheel;
 
-use crate::EARTH_RADIUS;
-
 pub struct OrbitCamPlugin;
 
 impl Plugin for OrbitCamPlugin {
@@ -35,8 +33,11 @@ impl Default for OrbitCamera {
             is_dragging: false,
             target: Vec3::ZERO,
 
-            min_radius: EARTH_RADIUS + 1000.0,
-            max_radius: EARTH_RADIUS + 20000.0
+            min_radius: 0.0,
+            max_radius: 1000.0,
+
+            // min_radius: EARTH_RADIUS + 1000.0,
+            // max_radius: EARTH_RADIUS + 20000.0
         }
     }
 }
@@ -59,7 +60,6 @@ impl OrbitCamera {
 
     // allow custom zoom limits
     // to implement when switching targets
-    // TODO: FIX REFERENCE USAGE
     pub fn with_zoom_limits(mut self, min_radius: f32, max_radius: f32) -> Self {
         self.min_radius = min_radius;
         self.max_radius = max_radius;
@@ -106,9 +106,7 @@ fn update(
 
         // handle mouse scroll
         for scroll in scroll_events.read() {
-            // variable zoom speed
-            let zoom_speed = (camera.radius / 1000.0).max(300.0);
-            camera.radius -= scroll.y * zoom_speed;
+            camera.radius -= scroll.y * 100.0;
             camera.radius = camera.radius.clamp(camera.min_radius, camera.max_radius);
         }
 
