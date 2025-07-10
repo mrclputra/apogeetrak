@@ -86,6 +86,14 @@ impl Satellite {
         self.constants.propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch)).ok()
     }
 
+    // calculate position at a specific time offset (in minutes from now)
+    // used to get positions of satellite at different periods of the orbit (for drawing)
+    // TODO: maybe merge this function with 'calculate'
+    fn calculate_at_offset(&self, offset_minutes: f64) -> Option<Prediction> {
+        let minutes_since_epoch = self.calculate_minutes_since_epoch()? + offset_minutes;
+        self.constants.propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch)).ok()
+    }
+
     // may need to export/store local Prediction type in the future to allow data access and rendering in main process, maybe
     // needs structure review
 
@@ -109,6 +117,30 @@ impl Satellite {
         // get difference in minutes
         let duration = now.signed_duration_since(epoch_datetime);
         Some(duration.num_minutes() as f64)
+    }
+
+    // generate orbital path points for visualization
+    fn generate_orbit_path(&self, num_points: usize) -> Vec<Vec3> {
+        let mut path_points = Vec::new();
+        
+        // calculate one full orbital period
+        let orbital_period = if self.mean_motion > 0.0 {
+            1440.0 / self.mean_motion // minutes in one orbit
+        } else {
+            90.0 // fallback to 90 minutes
+        };
+
+        // generate points along the orbit
+        for i in 0..num_points {
+            let time_offset = (i as f64 / num_points as f64) * orbital_period;
+            
+            if let Some(prediction) = self.calculate_at_offset(time_offset) {
+                let pos = sgp4_to_bevy_pos(&prediction);
+                path_points.push(pos);
+            }
+        }
+        
+        path_points
     }
 }
 
@@ -134,6 +166,67 @@ fn sgp4_to_bevy_pos(prediction: &Prediction) -> Vec3 {
     )
 }
 
+// creates a line mesh from a series of points
+// how it should be done
+fn create_orbit_line_mesh(points: &[Vec3]) -> Mesh {
+    let mut positions = Vec::new();
+    let mut indices = Vec::new();
+
+    // add all points
+    for point in points {
+        positions.push([point.x, point.y, point.z]);
+    }
+
+    // create line segments connecting consecutive points
+    for i in 0..points.len() {
+        let next_i = (i + 1) % points.len(); // wrap around to create closed orbit
+        indices.push(i as u32);
+        indices.push(next_i as u32);
+    }
+
+    // build the mesh
+    let mut mesh = Mesh::new(
+        bevy::render::render_resource::PrimitiveTopology::LineList,
+        bevy::render::render_asset::RenderAssetUsages::default(),
+    );
+    
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+    mesh.insert_indices(bevy::render::mesh::Indices::U32(indices));
+    
+    mesh
+}
+
+// render orbit paths for all satellites
+fn render_orbits(
+    satellites: &[Satellite],
+    commands: &mut Commands,
+    meshes: &mut ResMut<Assets<Mesh>>,
+    materials: &mut ResMut<Assets<StandardMaterial>>,
+) {
+    // create orbit material once and reuse it
+    let orbit_material = materials.add(StandardMaterial {
+        base_color: Color::srgba(1.0, 1.0, 1.0, 0.2),
+        alpha_mode: AlphaMode::Blend,
+        unlit: true, // glowing effect
+        ..default()
+    });
+
+    // render orbit for each satellite
+    for satellite in satellites {
+        let orbit_points = satellite.generate_orbit_path(64); // number of vertices per orbit
+        
+        if !orbit_points.is_empty() {
+            let orbit_mesh = create_orbit_line_mesh(&orbit_points);
+            
+            commands.spawn((
+                Mesh3d(meshes.add(orbit_mesh)),
+                MeshMaterial3d(orbit_material.clone()),
+                Transform::from_xyz(0.0, 0.0, 0.0),
+            ));
+        }
+    }
+}
+
 // load satellite data and spawn them in the world
 fn load_satellites(
     mut commands: Commands,
@@ -152,21 +245,23 @@ fn load_satellites(
     // need to implement proper async handling in the future
     match task.join() {
         Ok(Ok(satellites)) => {
+            // satellites.truncate(1);
+
             println!(
                 "\n=== Fetched {} Satellites ===\n",
                 satellites.len()
             );
 
-            // create material for satellite markers
+            // create satellite material
             let satellite_material = materials.add(StandardMaterial {
                 base_color: Srgba::hex("#ff4444").unwrap().into(),
                 metallic: 0.0,
-                perceptual_roughness: 0.3,
+                perceptual_roughness: 1.0,
                 ..default()
             });
 
-            // spawn each satellite as a small sphere
-            for (i, satellite) in satellites.iter().enumerate().take(7) {
+            // spawn each satellite as a small sphere, with debug information
+            for (i, satellite) in satellites.iter().enumerate() {
                 println!("Satellite #{}", i + 1);
                 println!("  Name           : {}", satellite.name);
                 println!("  NORAD ID       : {}", satellite.norad_id);
@@ -197,6 +292,7 @@ fn load_satellites(
 
                         let position = sgp4_to_bevy_pos(&prediction);
                         
+                        // spawn the satellite
                         commands.spawn((
                             Mesh3d(meshes.add(Sphere::new(100.0).mesh().ico(8).unwrap())),
                             MeshMaterial3d(satellite_material.clone()),
@@ -212,23 +308,8 @@ fn load_satellites(
                 println!();
             }
 
-            // spawn all remaining satellites without debug output
-            for satellite in satellites.iter().skip(7) {
-                if let Some(prediction) = satellite.calculate() {
-                    let position = sgp4_to_bevy_pos(&prediction);
-                    
-                    commands.spawn((
-                        Mesh3d(meshes.add(Sphere::new(30.0).mesh().ico(8).unwrap())),
-                        MeshMaterial3d(satellite_material.clone()),
-                        Transform::from_translation(position),
-                        satellite.clone(),
-                    ));
-                }
-            }
-
-            if satellites.len() > 7 {
-                println!("... and {} more entries not displayed", satellites.len() - 7);
-            }
+            // render orbits for ALL satellites
+            render_orbits(&satellites, &mut commands, &mut meshes, &mut materials);
         }
         Ok(Err(e)) => {
             error!("Failed to fetch TLE data: {}", e);

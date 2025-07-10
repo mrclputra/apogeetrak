@@ -106,7 +106,9 @@ fn update(
 
         // handle mouse scroll
         for scroll in scroll_events.read() {
-            camera.radius -= scroll.y * 170.0;
+            // zoom speed
+            // TODO: expose functionality
+            camera.radius -= scroll.y * 250.0;
             camera.radius = camera.radius.clamp(camera.min_radius, camera.max_radius);
         }
 
