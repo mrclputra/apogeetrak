@@ -1,7 +1,11 @@
 use bevy::prelude::*;
+use chrono::{NaiveDate, Utc};
 use reqwest::Error;
 use reqwest::header::USER_AGENT;
-use chrono::{DateTime, Utc, NaiveDate};
+use chrono::DateTime;
+use sgp4::Prediction;
+
+use crate::EARTH_RADIUS;
 
 pub struct TlePlugin;
 
@@ -13,16 +17,16 @@ impl Plugin for TlePlugin {
 
 struct Satellite {
     name: String,
-    norad_id: u32,
-    intl_id: String,
-    launch_year: u16,
-    launch_number: u16,
-    epoch_year: u16,
-    epoch_day: f64,
-    mean_motion: f64,
-    inclination: f64,
+    norad_id: u32,      // SATCAT, 5-digit number
+    intl_id: String,    // Intl ID
+    launch_year: u16,   // last 2 digits of year
+    launch_number: u16, // launch number of year
+    epoch_year: u16,    // last 2 digits of year
+    epoch_day: f64,     // includes fractional portion of day
+    mean_motion: f64,   // ballistic coefficient
+    inclination: f64,   // degrees
 
-    // SPG4 data
+    // SPG4 pre-parse data
     elements: sgp4::Elements,
     constants: sgp4::Constants,
 }
@@ -33,10 +37,10 @@ impl Satellite {
             return None;
         }
 
-        // note that in TLE format, positions are fixed
+        // note that in TLE format, element positions are fixed in set
         // https://en.wikipedia.org/wiki/Two-line_element_set
 
-        // extract data from line 1
+        // extract line 1 data
         let norad_id: u32 = line1[2..7].trim().parse().ok()?;
         let intl_id = line1[9..17].trim().to_string();
         let launch_year: u16 = line1[9..11].parse().ok()?;
@@ -44,17 +48,17 @@ impl Satellite {
         let epoch_year: u16 = line1[18..20].parse().ok()?;
         let epoch_day: f64 = line1[20..32].trim().parse().ok()?;
 
-        // extract data from line 2
+        // extract line 2 data
         let inclination: f64 = line2[8..16].trim().parse().ok()?;
         let mean_motion: f64 = line2[52..63].trim().parse().ok()?;
 
         // parse with SGP4
+        // !!IMPORTANT!!
         let elements = sgp4::Elements::from_tle(
             Some(name.trim().to_string()),
             line1.as_bytes(),
             line2.as_bytes()
         ).ok()?;
-
         let constants = sgp4::Constants::from_elements(&elements).ok()?;
 
         Some(Satellite {
@@ -72,23 +76,20 @@ impl Satellite {
         })
     }
 
-    // calculate geodesic position using SGP4
-    fn calculate_position(&self) -> Option<(f64, f64, f64)> {
+    // TODO: combine propagation calculations into one function
+    // 'Prediction' type returns (x, y, z) position and (vX, vY, vZ) velocities
+    fn calculate(&self) -> Option<Prediction> {
         let minutes_since_epoch = self.calculate_minutes_since_epoch()?;
-        let prediction = self.constants.propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch)).ok()?;
-
-        // convert cartesian position (km) to lat/lon/alt
-        let (lat, lon, alt) = cartesian_to_geodetic(
-            prediction.position[0],
-            prediction.position[1],
-            prediction.position[2]
-        );
-
-        Some((lat, lon, alt))
+        self.constants.propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch)).ok()
     }
 
-    // calculate how many minutes has passed since this satellite's epoch
+    // may need to export/store local Prediction type in the future to allow data access and rendering in main process, maybe
+    // needs structure review
+
+    // calculate how many minutes has passed since thie satellites's epoch
     fn calculate_minutes_since_epoch(&self) -> Option<f64> {
+        // find position of satellite at CURRENT datetime
+        // this feature should be modified in the future
         let now = Utc::now();
 
         // create epoch datetime
@@ -108,13 +109,11 @@ impl Satellite {
     }
 }
 
-// convert cartesian coordinates (x, y, z) to geodetic coordinates (lat, lon, alt)
-// https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
-fn cartesian_to_geodetic(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
-    let earth_radius = 6371.0;
-
+// convert Cartesian coordinates (x, y, z) to Geodetic coordinates (lat, lon, alt)
+// https://en.wikipedia.org/wiki/Geodetic_coordinates
+pub fn cartesian_to_geodetic(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
     let distance = (x*x + y*y + z*z).sqrt();
-    let altitude = distance - earth_radius;
+    let altitude = distance - EARTH_RADIUS as f64;
 
     let latitude = (z / distance).asin().to_degrees();
     let longitude = y.atan2(x).to_degrees();
@@ -122,7 +121,8 @@ fn cartesian_to_geodetic(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
     (latitude, longitude, altitude)
 }
 
-// system to fetch TLE data from API
+// function to actually fetch TLE data from fileserver, called on plugin startup
+// QA: should this be adapted for APIs?
 fn fetch_data() {
     let task = std::thread::spawn(|| {
         tokio::runtime::Runtime::new().unwrap().block_on(async {
@@ -130,16 +130,16 @@ fn fetch_data() {
         })
     });
 
-    // block briefly to get data
+    // block process briefly to get data
     // need to implement proper async handling in the future
     match task.join() {
         Ok(Ok(satellites)) => {
             println!(
-                "\n=== Fetched {} Navigation Satellites ===\n",
+                "\n=== Fetched {} Satellites ===\n",
                 satellites.len()
             );
 
-            for (i, satellite) in satellites.iter().enumerate().take(7) {
+            for(i, satellite) in satellites.iter().enumerate().take(7) {
                 println!("Satellite #{}", i + 1);
                 println!("  Name           : {}", satellite.name);
                 println!("  NORAD ID       : {}", satellite.norad_id);
@@ -150,12 +150,23 @@ fn fetch_data() {
                 println!("  Epoch          : Year {} Day {:.2}", satellite.epoch_year, satellite.epoch_day);
                 println!();
 
-                match satellite.calculate_position() {
-                    Some((lat, lon, alt)) => {
+                match satellite.calculate() {
+                    Some(prediction) => {
+                        let (lat, lon, alt) = cartesian_to_geodetic(
+                            prediction.position[0],
+                            prediction.position[1],
+                            prediction.position[2]
+                        );
                         println!(
                             "  Current Position: {:.4}°, {:.4}° at {:.1} km altitude",
                             lat, lon, alt
                         );
+
+                        // show velocity magnitude
+                        let velocity = (prediction.velocity[0].powi(2) + 
+                                       prediction.velocity[1].powi(2) + 
+                                       prediction.velocity[2].powi(2)).sqrt();
+                        println!("  Velocity: {:.2} km/s", velocity);
                     }
                     None => {
                         println!("  Current Position: Unable to calculate");
@@ -179,8 +190,9 @@ fn fetch_data() {
 }
 
 // async function to actually fetch and parse the satellite data
+// QA: should i combine this with "fetch_data()"?
 async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
-    // call API here
+    // call fileserver here
     let url = "https://celestrak.org/NORAD/elements/gnss.txt";
 
     let response = reqwest::Client::new()
