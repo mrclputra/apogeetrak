@@ -20,19 +20,6 @@ fn main() -> bevy::app::AppExit {
         .run()
 }
 
-// // convert lat/lon to 3D position (on surface)
-// fn latlon_to_pos(latitude: f32, longitude: f32, radius: f32) -> Vec3 {
-//     let lat_rad = latitude.to_radians();
-//     let lon_rad = longitude.to_radians();
-
-//     // convert spherical coordinates to cartesian
-//     let x = radius * lat_rad.cos() * lon_rad.cos();
-//     let y = radius * lat_rad.sin();
-//     let z = radius * lat_rad.cos() * lon_rad.sin();
-    
-//     Vec3::new(x, y, z)
-// }
-
 // set up the main scene
 fn setup(
     mut commands: Commands,

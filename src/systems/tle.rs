@@ -11,8 +11,8 @@ pub struct TlePlugin;
 
 impl Plugin for TlePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, load_satellites)
-           .add_systems(Update, update_satellite_positions);
+        app.add_systems(Startup, load_satellites);
+        //    .add_systems(Update, update_satellite_positions);
     }
 }
 
@@ -86,7 +86,7 @@ impl Satellite {
         self.constants.propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch)).ok()
     }
 
-    // calculate position at a specific time offset (in minutes from now)
+    // calculate position at a specific time offset (in minutes from now, can be negative)
     // used to get positions of satellite at different periods of the orbit (for drawing)
     // TODO: maybe merge this function with 'calculate'
     fn calculate_at_offset(&self, offset_minutes: f64) -> Option<Prediction> {
@@ -205,7 +205,7 @@ fn render_orbits(
 ) {
     // create orbit material once and reuse it
     let orbit_material = materials.add(StandardMaterial {
-        base_color: Color::srgba(1.0, 1.0, 1.0, 0.2),
+        base_color: Color::srgba(1.0, 1.0, 1.0, 0.05),
         alpha_mode: AlphaMode::Blend,
         unlit: true, // glowing effect
         ..default()
@@ -213,7 +213,7 @@ fn render_orbits(
 
     // render orbit for each satellite
     for satellite in satellites {
-        let orbit_points = satellite.generate_orbit_path(64); // number of vertices per orbit
+        let orbit_points = satellite.generate_orbit_path(128); // number of vertices per orbit
         
         if !orbit_points.is_empty() {
             let orbit_mesh = create_orbit_line_mesh(&orbit_points);
@@ -254,7 +254,7 @@ fn load_satellites(
 
             // create satellite material
             let satellite_material = materials.add(StandardMaterial {
-                base_color: Srgba::hex("#ff4444").unwrap().into(),
+                base_color: Srgba::hex("#ffffff").unwrap().into(),
                 metallic: 0.0,
                 perceptual_roughness: 1.0,
                 ..default()
@@ -294,7 +294,7 @@ fn load_satellites(
                         
                         // spawn the satellite
                         commands.spawn((
-                            Mesh3d(meshes.add(Sphere::new(100.0).mesh().ico(8).unwrap())),
+                            Mesh3d(meshes.add(Sphere::new(50.0).mesh().ico(8).unwrap())),
                             MeshMaterial3d(satellite_material.clone()),
                             Transform::from_translation(position),
                             satellite.clone(),
@@ -336,7 +336,7 @@ fn update_satellite_positions(
 // QA: should i combine this with "load_satellites()"?
 async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
     // call fileserver here
-    let url = "https://celestrak.org/NORAD/elements/gnss.txt";
+    let url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=tle";
 
     let response = reqwest::Client::new()
         .get(url)

@@ -108,7 +108,7 @@ fn update(
         for scroll in scroll_events.read() {
             // zoom speed
             // TODO: expose functionality
-            camera.radius -= scroll.y * 250.0;
+            camera.radius -= scroll.y * 500.0;
             camera.radius = camera.radius.clamp(camera.min_radius, camera.max_radius);
         }
 
