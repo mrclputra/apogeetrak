@@ -1,17 +1,22 @@
 use bevy::prelude::*;
+use chrono::{Utc, DateTime};
 
 pub struct GlobeUIPlugin;
 
 impl Plugin for GlobeUIPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup)
-           .add_systems(Update, update_satellite_count);
+           .add_systems(Update, (update_satellite_count, update_datetime));
     }
 }
 
 // UI component to display satellite count
 #[derive(Component)]
 pub struct SatelliteCounter;
+
+// UI component to display current datetimme
+#[derive(Component)]
+pub struct DateTimeDisplay;
 
 use crate::systems::satellites::tle::Satellite;
 
@@ -41,6 +46,21 @@ fn setup(mut commands: Commands) {
                 TextColor(Color::WHITE),
                 SatelliteCounter,
             ));
+
+            // display datetime
+            parent.spawn((
+                Text::new("Time: Loading..."),
+                TextFont {
+                    font_size: 14.0,
+                    ..default()
+                },
+                TextColor(Color::WHITE),
+                DateTimeDisplay,
+                Node {
+                    margin: UiRect::top(Val::Px(5.0)), // spacing
+                    ..default()
+                },
+            ));
         });
 }
 
@@ -53,5 +73,16 @@ fn update_satellite_count(
     
     if let Ok(mut text) = text_query.single_mut() {
         text.0 = format!("Satellites: {}", count);
+    }
+}
+
+// update the datetime display with current UTC time
+fn update_datetime(
+    mut text_query: Query<&mut Text, With<DateTimeDisplay>>,
+) {
+    if let Ok(mut text) = text_query.single_mut() {
+        let now: DateTime<Utc> = Utc::now();
+        // format as: "2025-07-11 15:30:45 UTC"
+        text.0 = format!("Time: {} UTC", now.format("%Y-%m-%d %H:%M:%S"));
     }
 }
