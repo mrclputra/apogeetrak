@@ -13,7 +13,7 @@ impl Plugin for GlobeUIPlugin {
 #[derive(Component)]
 pub struct SatelliteCounter;
 
-use crate::systems::tle::Satellite;
+use crate::systems::satellites::tle::Satellite;
 
 fn setup(mut commands: Commands) {
     // create UI container

@@ -4,7 +4,7 @@ use bevy::prelude::*;
 mod systems;
 use systems::camera::{OrbitCamPlugin, OrbitCamera};
 use systems::ui::GlobeUIPlugin;
-use systems::tle::TlePlugin;
+use systems::satellites::rendering::TlePlugin;
 
 // WGS84
 const EARTH_RADIUS: f32 = 6378.0;
