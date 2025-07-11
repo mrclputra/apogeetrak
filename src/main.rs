@@ -5,6 +5,7 @@ mod systems;
 use systems::camera::{OrbitCamPlugin, OrbitCamera};
 use systems::ui::GlobeUIPlugin;
 use systems::satellites::rendering::TlePlugin;
+use systems::satellites::labels::LabelsPlugin;
 
 // WGS84
 const EARTH_RADIUS: f32 = 6378.0;
@@ -15,6 +16,7 @@ fn main() -> bevy::app::AppExit {
         .add_plugins(OrbitCamPlugin)
         .add_plugins(GlobeUIPlugin)
         .add_plugins(TlePlugin)
+        .add_plugins(LabelsPlugin)
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, setup)
         .run()
@@ -54,6 +56,6 @@ fn setup(
         Transform::from_xyz(-8000.0, 8000.0, 12000.0).looking_at(Vec3::ZERO, Vec3::Y),
         OrbitCamera::new(15000.0, 0.3)
             .with_target(Vec3::ZERO)
-            .with_zoom_limits(7000.0, 70000.0)
+            .with_zoom_limits(7000.0, 100000.0)
     ));
 }
