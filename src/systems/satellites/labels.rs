@@ -122,7 +122,7 @@ fn update(
                 parent.spawn((
                     Text::new(label_text),
                     TextFont {
-                        font_size: 10.0,
+                        font_size: 8.0,
                         ..default()
                     },
                     TextColor(Color::WHITE),

@@ -21,6 +21,11 @@ pub struct OrbitCamera {
 
     pub min_radius: f32,
     pub max_radius: f32,
+
+    // smoothing values
+    target_radius: f32,
+    target_angle: f32,
+    target_v_angle: f32,
 }
 
 impl Default for OrbitCamera {
@@ -36,8 +41,9 @@ impl Default for OrbitCamera {
             min_radius: 0.0,
             max_radius: 1000.0,
 
-            // min_radius: EARTH_RADIUS + 1000.0,
-            // max_radius: EARTH_RADIUS + 20000.0
+            target_radius: 15.0,
+            target_angle: 0.0,
+            target_v_angle: 0.3,
         }
     }
 }
@@ -47,6 +53,7 @@ impl OrbitCamera {
         Self {
             radius,
             speed,
+            target_radius: radius,
             ..default()
         }
     }
@@ -82,7 +89,11 @@ fn update(
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut mouse_motion: EventReader<CursorMoved>,
     mut scroll_events: EventReader<MouseWheel>,
+    time: Res<Time>,
 ) {
+    const ZOOM_SPEED: f32 = 1400.0;
+    const SMOOTH_SPEED: f32 = 10.0;
+
     for (mut transform, mut camera) in camera_query.iter_mut() {
         // handle mouse drag
         if mouse_buttons.just_pressed(MouseButton::Right) {
@@ -96,11 +107,11 @@ fn update(
         if camera.is_dragging {
             for motion in mouse_motion.read() {
                 if let Some(delta) = motion.delta {
-                    camera.angle += delta.x * camera.speed * 0.01;
-                    camera.v_angle += delta.y * camera.speed * 0.01;
+                    camera.target_angle += delta.x * camera.speed * 0.01;
+                    camera.target_v_angle += delta.y * camera.speed * 0.01;
                 }
-                // clamp pitch
-                camera.v_angle = camera.v_angle.clamp(-1.5, 1.5);
+                // clamp pitch on the target value
+                camera.target_v_angle = camera.target_v_angle.clamp(-1.5, 1.5);
             }
         }
 
@@ -108,9 +119,15 @@ fn update(
         for scroll in scroll_events.read() {
             // zoom speed
             // TODO: expose functionality
-            camera.radius -= scroll.y * 700.0;
-            camera.radius = camera.radius.clamp(camera.min_radius, camera.max_radius);
+            camera.target_radius -= scroll.y * ZOOM_SPEED;
+            camera.target_radius = camera.target_radius.clamp(camera.min_radius, camera.max_radius);
         }
+
+        // interpolate actual values towards targets
+        let dt = time.delta_secs();
+        camera.angle += (camera.target_angle - camera.angle) * dt * SMOOTH_SPEED;
+        camera.v_angle += (camera.target_v_angle - camera.v_angle) * dt * SMOOTH_SPEED;
+        camera.radius += (camera.target_radius - camera.radius) * dt * SMOOTH_SPEED;
 
         // update camera position/orientation
         transform.translation = camera.calculate_position();
