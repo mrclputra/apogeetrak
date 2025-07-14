@@ -5,7 +5,7 @@ mod systems;
 use systems::camera::{OrbitCamPlugin, OrbitCamera};
 use systems::ui::GlobeUIPlugin;
 use systems::satellites::rendering::TlePlugin;
-use systems::satellites::labels::LabelsPlugin;
+// use systems::satellites::labels::LabelsPlugin;
 
 // WGS84
 const EARTH_RADIUS: f32 = 6378.0;
@@ -16,7 +16,7 @@ fn main() -> bevy::app::AppExit {
         .add_plugins(OrbitCamPlugin)
         .add_plugins(GlobeUIPlugin)
         .add_plugins(TlePlugin)
-        .add_plugins(LabelsPlugin)
+        // .add_plugins(LabelsPlugin)
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, setup)
         .run()
@@ -41,7 +41,7 @@ fn setup(
     ));
 
     // sun light
-    // need to make it based on real sun position
+    // TODO: need to make it based on real sun position
     commands.spawn((
         DirectionalLight {
             illuminance: 1_500.,

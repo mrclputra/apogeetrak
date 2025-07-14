@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use chrono::{DateTime, Utc};
 
 use crate::systems::satellites::tle::{Satellite, cartesian_to_geodetic, sgp4_to_cartesian, fetch_satellites};
 
@@ -108,17 +109,17 @@ fn load_satellites(
 
             // spawn each satellite as a small sphere, with debug information
             for (i, satellite) in satellites.iter().enumerate() {
-                println!("Satellite #{}", i + 1);
+                // println!("Satellite #{}", i + 1);
                 println!("  Name           : {}", satellite.name);
-                println!("  NORAD ID       : {}", satellite.norad_id);
-                println!("  Intl. ID       : {}", satellite.intl_id);
-                println!("  Launch         : {}-{:03} (Year-Launch Number)", satellite.launch_year, satellite.launch_number);
-                println!("  Inclination    : {:.2}°", satellite.inclination);
-                println!("  Mean Motion    : {:.2} rev/day", satellite.mean_motion);
-                println!("  Epoch          : Year {} Day {:.2}", satellite.epoch_year, satellite.epoch_day);
-                println!();
+                // println!("  NORAD ID       : {}", satellite.norad_id);
+                // println!("  Intl. ID       : {}", satellite.intl_id);
+                // println!("  Launch         : {}-{:03} (Year-Launch Number)", satellite.launch_year, satellite.launch_number);
+                // println!("  Inclination    : {:.2}°", satellite.inclination);
+                // println!("  Mean Motion    : {:.2} rev/day", satellite.mean_motion);
+                // println!("  Epoch          : Year {} Day {:.2}", satellite.epoch_year, satellite.epoch_day);
+                // println!();
 
-                match satellite.calculate() {
+                match satellite.calculate(Utc::now()) {
                     Some(prediction) => {
                         let (lat, lon, alt) = cartesian_to_geodetic(
                             prediction.position[0],
