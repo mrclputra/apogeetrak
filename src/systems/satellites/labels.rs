@@ -85,8 +85,9 @@ fn update(
             // create new label
             let pos = screen_pos.unwrap(); // known Some
             let label_text = format!("{}\nAlt: {:.0}km", 
-                satellite.name, 
-                sat_pos.length() - EARTH_RADIUS
+                satellite.name(), 
+                satellite.current_geodetic_position().2, // altitude
+                // sat_pos.length() - EARTH_RADIUS
             );
 
             commands.entity(container).with_children(|parent| {

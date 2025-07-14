@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use chrono::{NaiveDate, Utc};
+use chrono::Utc;
 use chrono::DateTime;
 use reqwest::Error;
 use reqwest::header::USER_AGENT;
@@ -11,112 +11,95 @@ use crate::EARTH_RADIUS;
 // unified satellite component type
 #[derive(Component, Clone)]
 pub struct Satellite {
-    pub name: String,
-    pub norad_id: u32,      // SATCAT, 5-digit number
-    pub intl_id: String,    // International ID
-    pub launch_year: u16,   // last 2 digits of launch year
-    pub launch_number: u16, // launch number of year
-    pub epoch_year: u16,    // last 2 digits of epoch year
-    pub epoch_day: f64,     // includes fractional portion of epoch day
-    pub mean_motion: f64,   // ballistic coefficient
-    pub inclination: f64,   // degrees
-
-    // SGP4 pre-parse data
-    constants: sgp4::Constants,
-
-    // QA: should we store calculated velocities (vX, vY, vZ) and positions (x, y, z) here?
+    // SGP4 datatypes, extracted from TLE lines
+    pub elements: sgp4::Elements,
+    pub constants: sgp4::Constants,
 }
 
 impl Satellite {
-    // note: TLE is always 3 lines
+    // note: TLS is always 3 lines
     pub fn parse(name: &str, line1: &str, line2: &str) -> Option<Self> {
         if line1.len() < 69 || line2.len() < 69 {
             return None;
         }
 
-        // note that in TLE format, element positions are fixed in set
-        // https://en.wikipedia.org/wiki/Two-line_element_set
-
-        // extract line 1 data
-        let norad_id: u32 = line1[2..7].trim().parse().ok()?;
-        let intl_id = line1[9..17].trim().to_string();
-        let launch_year: u16 = line1[9..11].parse().ok()?;
-        let launch_number: u16 = line1[11..14].trim().parse().ok()?;
-        let epoch_year: u16 = line1[18..20].parse().ok()?;
-        let epoch_day: f64 = line1[20..32].trim().parse().ok()?;
-
-        // extract line 2 data
-        let inclination: f64 = line2[8..16].trim().parse().ok()?;
-        let mean_motion: f64 = line2[52..63].trim().parse().ok()?;
-
-        // parse with SGP4
-        // !!IMPORTANT!!
+        // I just let the SGP4 library do the heavy lifting
         let elements = sgp4::Elements::from_tle(
             Some(name.trim().to_string()),
             line1.as_bytes(),
             line2.as_bytes()
         ).ok()?;
+        
         let constants = sgp4::Constants::from_elements(&elements).ok()?;
 
-        // return
         Some(Satellite {
-            name: name.trim().to_string(),
-            norad_id,
-            intl_id,
-            launch_year: if launch_year < 57 { 2000 + launch_year } else { 1900 + launch_year },
-            launch_number,
-            epoch_year: if epoch_year < 57 { 2000 + epoch_year } else { 1900 + epoch_year },
-            epoch_day,
-            mean_motion,
-            inclination,
-            constants,
+            elements,
+            constants
         })
+    }
+
+    // getters
+    pub fn name(&self) -> &str {
+        self.elements.object_name.as_deref().unwrap_or("Unknown")
+    }
+    pub fn norad_id(&self) -> u64 {
+        self.elements.norad_id
+    }
+    pub fn intl_id(&self) -> &str {
+        self.elements.international_designator.as_deref().unwrap_or("Unknown")
+    }
+    pub fn inclination(&self) -> f64 {
+        self.elements.inclination
+    }
+    pub fn mean_motion(&self) -> f64 {
+        self.elements.mean_motion
+    }
+    pub fn epoch_datetime(&self) -> &chrono::NaiveDateTime {
+        &self.elements.datetime
     }
 
     // calculates position of satellite given a time
     // 'Prediction' type returns (x, y, z) position and (vX, vY, vZ) velocities
-    pub fn calculate(&self, propagation_time: DateTime<Utc>) -> Option<Prediction> {
-        let tsince = self.minutes_since_epoch(propagation_time)?;
-        self.constants.propagate(sgp4::MinutesSinceEpoch(tsince)).ok()
+    pub fn calculate(&self, propagation_time: DateTime<Utc>) -> Prediction {
+        let tsince = match self.minutes_since_epoch(propagation_time) {
+            Some(t) => t,
+            None => {
+                return Prediction {
+                    position: [0.0, 0.0, 0.0],
+                    velocity: [0.0, 0.0, 0.0],
+                };
+            }
+        };
+
+        self.constants.propagate(sgp4::MinutesSinceEpoch(tsince))
+            .unwrap_or_else(|_| Prediction {
+                position: [0.0, 0.0, 0.0],
+                velocity: [0.0, 0.0, 0.0],
+            })
+        // self.constants.propagate(sgp4::MinutesSinceEpoch(tsince)).ok()
     }
 
-    // may need to export/store local Prediction type into the Satellite struct in the future
-    // allow data access and rendering in main process, maybe
-    // needs structure review
-
-    // calculate how manu minutes has passed sunce this satellite's epoch
     fn minutes_since_epoch(&self, target_time: DateTime<Utc>) -> Option<f64> {
-        // find time of satellite at target time
-        // used to calculate position
+        let target_naive = target_time.naive_utc();
 
-        // create epoch datetime
-        let epoch_date = NaiveDate::from_ymd_opt(self.epoch_year as i32, 1, 1)?
-            .checked_add_signed(chrono::Duration::days((self.epoch_day - 1.0) as i64))?
-            .and_time(
-                chrono::NaiveTime::from_num_seconds_from_midnight_opt(
-                    (self.epoch_day.fract() * 24.0 * 3600.0) as u32, 0
-                )?
-            );
-
-        let epoch_datetime = DateTime::<Utc>::from_naive_utc_and_offset(epoch_date, Utc);
-
-        // get difference in minutes
-        let duration = target_time.signed_duration_since(epoch_datetime);
-        Some(duration.num_seconds() as f64 / 60.0) // high precision
+        match self.elements.datetime_to_minutes_since_epoch(&target_naive) {
+            Ok(minutes_since_epoch) => Some(minutes_since_epoch.0),
+            Err(_) => None,
+        }
     }
 
     // calculate orbital trajectory
-    // returns a traveable array of points on orbital path
+    // returns a traversable array of points on oorbital path
     pub fn generate_orbit_path(&self, resolution: usize) -> Vec<Vec3> {
-        let mut path_points = Vec::new();
+        let mut path_points = Vec::with_capacity(resolution); // optimization
 
-        let orbital_period = if self.mean_motion > 0.0 {
-            1440.0 / self.mean_motion // minutes in one orbit
+        let orbital_period = if self.elements.mean_motion > 0.0 {
+            1440.0 / self.elements.mean_motion // minutes in one orbit
         } else {
             90.0 // fallback
         };
 
-        let start_time = Utc::now();
+        let start_time = self.elements.datetime.and_utc();
 
         // generate points along the orbit
         for i in 0..resolution {
@@ -124,13 +107,40 @@ impl Satellite {
             let offset_duration = chrono::Duration::seconds((time_offset_minutes * 60.0) as i64);
             let target_time = start_time + offset_duration;
 
-            if let Some(prediction) = self.calculate(target_time) {
-                let pos = sgp4_to_cartesian(&prediction);
-                path_points.push(pos);
-            }
+            let prediction = self.calculate(target_time);
+            let pos = sgp4_to_cartesian(&prediction);
+            path_points.push(pos);
         }
 
         path_points
+    }
+
+    // HELPERS
+
+    // get current position (x, y ,z)
+    pub fn current_position(&self) -> Vec3 {
+        let prediction = self.calculate(Utc::now());
+        sgp4_to_cartesian(&prediction)
+    }
+
+    // get current geodetic position (lat, lon, alt)
+    pub fn current_geodetic_position(&self) -> (f64, f64, f64) {
+        let prediction = self.calculate(Utc::now());
+        cartesian_to_geodetic(
+            prediction.position[0],
+            prediction.position[1], 
+            prediction.position[2]
+        )
+    }
+
+    // get current velocity (vX, vY, vZ)
+    pub fn current_velocity(&self) -> (f64, f64, f64) {
+        let prediction = self.calculate(Utc::now());
+        (
+            prediction.velocity[0],
+            prediction.velocity[1],
+            prediction.velocity[2]
+        )
     }
 }
 
@@ -159,7 +169,6 @@ pub fn sgp4_to_cartesian(prediction: &Prediction) -> Vec3 {
 }
 
 // async function to actually fetch and parse the satellite data
-// QA: should i combine this with "load_satellites()"?
 pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
     // call fileserver here
     let url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=tle";
