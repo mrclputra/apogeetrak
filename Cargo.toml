@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = "0.16.1"
+bevy = { version = "0.16.1", features=["jpeg"] }
 chrono = "0.4.41"
 rand = "0.9.1"
 reqwest = "0.12.22"

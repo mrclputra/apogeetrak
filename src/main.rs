@@ -10,6 +10,14 @@ use systems::satellites::labels::LabelsPlugin;
 // WGS84
 const EARTH_RADIUS: f32 = 6378.0;
 
+// textures
+const EARTH_DIFFUSE: &str = "textures/earth_diffuse.jpg";       // base color/albedo
+const EARTH_NORMAL: &str = "textures/earth_normal.jpg";         // surface detail normals
+const EARTH_SPECULAR: &str = "textures/earth_specular.jpg";     // roughness map (water=smooth, land=rough)
+// const EARTH_EMISSIVE: &str = "textures/earth_emissive.jpg";     // night lights
+// const EARTH_OCCLUSION: &str = "textures/earth_occlusion.jpg";   // ambient occlusion
+
+
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -27,17 +35,45 @@ fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    asset_server: Res<AssetServer>,
 ) {
+    
+    // create Earth sphere with UV
+    let mut sphere_mesh = Sphere::new(EARTH_RADIUS).mesh().uv(32, 64);
+    // generate normal map tangents
+    sphere_mesh.generate_tangents().unwrap();
+
+    // earth textures
+    let diffuse_texture = asset_server.load(EARTH_DIFFUSE);
+    // let normal_texture = asset_server.load(EARTH_NORMAL);
+    // let specular_texture = asset_server.load(EARTH_SPECULAR);
+
     // create the Earth sphere
     commands.spawn((
-        Mesh3d(meshes.add(Sphere::new(EARTH_RADIUS).mesh().ico(32).unwrap())),
+        Mesh3d(meshes.add(sphere_mesh)),
         MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: Srgba::hex("#0070a0").unwrap().into(),
+            base_color_texture: Some(diffuse_texture),
+            base_color: Color::WHITE, // keep this way, no tint
+            
+            // normal map
+            // normal_map_texture: Some(normal_texture),
+
+            // // specular texture
+            // metallic_roughness_texture: Some(specular_texture),
             metallic: 0.0,
-            perceptual_roughness: 0.5,
-            ..default()
+            perceptual_roughness: 1.0,
+
+            // other material settings
+            alpha_mode: AlphaMode::Opaque,
+            double_sided: false,
+            unlit: false, // keep pbr lighting
+
+            ..default()  
         })),
-        Transform::from_xyz(0.0, 0.0, 0.0),
+        Transform::from_xyz(0.0, 0.0, 0.0)
+            .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)
+                * Quat::from_rotation_z(std::f32::consts::PI)),
+        Name::new("Earth")
     ));
 
     // sun light
