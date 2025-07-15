@@ -175,7 +175,7 @@ pub fn sgp4_to_cartesian(prediction: &Prediction) -> Vec3 {
 // async function to actually fetch and parse the satellite data
 pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
     // DEV: toggle to select source
-    let load_from_file = false;
+    let load_from_file = true;
 
     let tle_data = if load_from_file {
         // load from local file

@@ -8,7 +8,7 @@ use bevy::pbr::MaterialPlugin;
 mod systems;
 use systems::camera::{OrbitCamPlugin, OrbitCamera};
 use systems::ui::GlobeUIPlugin;
-// use systems::satellites::render::TlePlugin;
+use systems::satellites::render::TlePlugin;
 use systems::satellites::labels::LabelsPlugin;
 
 // WGS84
@@ -64,7 +64,7 @@ fn main() -> bevy::app::AppExit {
         .add_plugins(MaterialPlugin::<EarthMaterial>::default()) // register material
         .add_plugins(OrbitCamPlugin)
         .add_plugins(GlobeUIPlugin)
-        // .add_plugins(TlePlugin)
+        .add_plugins(TlePlugin)
         .add_plugins(LabelsPlugin)
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0)))
         .add_systems(Startup, setup)
