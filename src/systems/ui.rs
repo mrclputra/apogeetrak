@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 use chrono::{Utc, DateTime};
 
-pub struct GlobeUIPlugin;
+use crate::systems::satellites::Satellite;
 
-impl Plugin for GlobeUIPlugin {
+pub struct UIPlugin;
+
+impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup)
+        app.add_systems(Startup, setup_ui)
            .add_systems(Update, (update_satellite_count, update_datetime));
     }
 }
@@ -18,9 +20,7 @@ pub struct SatelliteCounter;
 #[derive(Component)]
 pub struct DateTimeDisplay;
 
-use crate::systems::satellites::tle::Satellite;
-
-fn setup(mut commands: Commands) {
+fn setup_ui(mut commands: Commands) {
     // create UI container
     commands
         .spawn((

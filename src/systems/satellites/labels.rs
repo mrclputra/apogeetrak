@@ -4,18 +4,8 @@ use bevy::prelude::*;
 use bevy::render::camera::Camera;
 use bevy::window::Window;
 
-use crate::systems::satellites::tle::Satellite;
-use crate::systems::earth::EARTH_RADIUS;
-
-pub struct LabelsPlugin;
-
-impl Plugin for LabelsPlugin {
-    fn build(&self, app: &mut App) {
-        app
-            .add_systems(Startup, setup)
-            .add_systems(Update, update);
-    }
-}
+use crate::systems::satellites::Satellite;
+use crate::constants::EARTH_RADIUS;
 
 // full ui screen container component
 #[derive(Component)]
@@ -29,7 +19,7 @@ pub struct SatelliteLabel {
 }
 
 // setup UI overlay
-fn setup(mut commands: Commands) {
+pub fn setup_labels(mut commands: Commands) {
     // create UI container covering entire screen
     commands.spawn((
         Node {
@@ -43,7 +33,7 @@ fn setup(mut commands: Commands) {
     ));
 }
 
-fn update(
+pub fn update_labels(
     mut commands: Commands,
     satellites: Query<(Entity, &Transform, &Satellite)>,
     camera: Query<(&Camera, &Transform)>,

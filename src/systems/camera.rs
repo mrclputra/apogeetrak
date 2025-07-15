@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 use bevy::input::mouse::MouseWheel;
 
-pub struct OrbitCamPlugin;
+pub struct CameraPlugin;
 
-impl Plugin for OrbitCamPlugin {
+impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, update);
+        app.add_systems(Update, update_orbit_camera);
     }
 }
 
@@ -84,7 +84,7 @@ impl OrbitCamera {
     }
 }
 
-fn update(
+fn update_orbit_camera(
     mut camera_query: Query<(&mut Transform, &mut OrbitCamera)>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
     mut mouse_motion: EventReader<CursorMoved>,

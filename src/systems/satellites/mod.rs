@@ -1,16 +1,20 @@
 use bevy::prelude::*;
 
-use crate::systems::satellites::tle::{fetch_satellites, Satellite};
-
 pub mod tle;
 pub mod labels;
 
-// main satellite module
-pub struct TlePlugin;
+pub use tle::{Satellite, fetch_satellites};
+use labels::setup_labels;
 
-impl Plugin for TlePlugin {
+// main satellite plugin
+// combined TLE and labeling functionality
+pub struct SatellitePlugin;
+
+impl Plugin for SatellitePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup);
+        app
+            .add_systems(Startup, (setup_satellites, setup_labels))
+            .add_systems(Update, labels::update_labels);
     }
 }
 
@@ -76,7 +80,7 @@ fn render_orbits(
 }
 
 // called on startup
-fn setup(
+fn setup_satellites(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -94,11 +98,6 @@ fn setup(
     match task.join() {
         Ok(Ok(satellites)) => {
             // satellites.truncate(1);
-
-            println!(
-                "\n=== Fetched {} Satellites ===\n",
-                satellites.len()
-            );
 
             // create satellite material
             let satellite_material = materials.add(StandardMaterial {

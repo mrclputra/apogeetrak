@@ -1,20 +1,20 @@
 use bevy::prelude::*;
 
+pub mod constants;
+
 // import camera and systems
 mod systems;
-use systems::camera::OrbitCamPlugin;
-use systems::ui::GlobeUIPlugin;
-use systems::satellites::TlePlugin;
-use systems::satellites::labels::LabelsPlugin;
+use systems::camera::CameraPlugin;
+use systems::ui::UIPlugin;
+use systems::satellites::SatellitePlugin;
 use systems::earth::EarthPlugin;
 
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(OrbitCamPlugin)
-        .add_plugins(GlobeUIPlugin)
-        .add_plugins(TlePlugin)
-        .add_plugins(LabelsPlugin)
+        .add_plugins(CameraPlugin)
+        .add_plugins(UIPlugin)
+        .add_plugins(SatellitePlugin)
         .add_plugins(EarthPlugin)
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0))) // background color
         .add_systems(Startup, setup_scene)

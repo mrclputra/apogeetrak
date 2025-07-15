@@ -1,11 +1,13 @@
 use bevy::prelude::*;
-use bevy::render::render_resource::*;
-use bevy::reflect::TypePath;
-use bevy::asset::Asset;
 use bevy::pbr::MaterialPlugin;
 
 pub mod materials;
 use materials::{EarthMaterial, CloudMaterial, SunUniform};
+
+use crate::constants::{
+    EARTH_RADIUS, CLOUD_RADIUS, EARTH_ROTATION_SPEED,
+    EARTH_DIFFUSE_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_CLOUDS_TEXTURE
+};
 
 // components (tags)
 #[derive(Component)]
@@ -17,30 +19,19 @@ pub struct Clouds;
 #[derive(Component)]
 pub struct SunLight;
 
-// earth constants
-// QA: move to a global constants module later
-pub const EARTH_RADIUS: f32 = 6378.0;
-pub const CLOUD_RADIUS: f32 = 6428.0;
-pub const EARTH_ROTATION_SPEED: f32 = 0.1;
-
-// texture paths
-const EARTH_DIFFUSE: &str = "textures/earth_diffuse.jpg";
-const EARTH_NIGHT: &str = "textures/earth_night.jpg";
-const EARTH_CLOUDS: &str = "textures/earth_clouds.jpg";
-
 pub struct EarthPlugin;
 
 impl Plugin for EarthPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MaterialPlugin::<EarthMaterial>::default())
             .add_plugins(MaterialPlugin::<CloudMaterial>::default())
-            .add_systems(Startup, setup)
-            .add_systems(Update, (update_sun, rotate_earth));
+            .add_systems(Startup, setup_earth)
+            .add_systems(Update, (update_sun_direction, rotate_earth));
     }
 }
 
 // setup
-fn setup(
+fn setup_earth(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut earth_materials: ResMut<Assets<EarthMaterial>>,
@@ -56,9 +47,9 @@ fn setup(
     cloud_sphere.generate_tangents().unwrap();
 
     // load textures
-    let diffuse_texture = asset_server.load(EARTH_DIFFUSE);
-    let night_texture = asset_server.load(EARTH_NIGHT);
-    let cloud_texture = asset_server.load(EARTH_CLOUDS);
+    let diffuse_texture = asset_server.load(EARTH_DIFFUSE_TEXTURE);
+    let night_texture = asset_server.load(EARTH_NIGHT_TEXTURE);
+    let cloud_texture = asset_server.load(EARTH_CLOUDS_TEXTURE);
 
     // sun direction
     let sun_direction = Vec3::new(1.0, 1.0, 1.0).normalize();
@@ -111,7 +102,7 @@ fn setup(
 }
 
 // update shaders based on sunlight
-fn update_sun(
+fn update_sun_direction(
     sun_query: Query<&Transform, (With<SunLight>, Changed<Transform>)>,
     earth_query: Query<&MeshMaterial3d<EarthMaterial>, With<Earth>>,
     cloud_query: Query<&MeshMaterial3d<CloudMaterial>, With<Clouds>>,
