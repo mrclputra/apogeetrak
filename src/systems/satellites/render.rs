@@ -107,34 +107,36 @@ fn setup(
 
             // spawn satellites
             for (i, satellite) in satellites.iter().enumerate() {
-                println!("Object #{}", i + 1);
-                println!("  Name        : {}", satellite.name());
-                println!("  NORAD ID    : {}", satellite.norad_id());
+                // println!("Object #{}", i + 1);
+                // println!("  Name        : {}", satellite.name());
+                // println!("  NORAD ID    : {}", satellite.norad_id());
                 // println!("  Intl ID     : {}", satellite.intl_id());
                 // println!("  Inclination : {:.2}", satellite.inclination());
                 // println!("  Mean Motion : {:.2}", satellite.mean_motion());
                 // println!("  Epoch       : Year {} Day {:.2}", satellite.epoch_datetime().year(), satellite.epoch_datetime().day());
-                println!();
+                // println!();
 
-                // print current ECI position
-                let pos = satellite.current_position();
-                println!(
-                    "  ECI         : {:.2} km, {:.2} km, {:.2} km", pos.x, pos.y, pos.z
-                );
+                // // print current ECI position
+                // let pos = satellite.current_position();
+                // println!(
+                //     "  ECI         : {:.2} km, {:.2} km, {:.2} km", pos.x, pos.y, pos.z
+                // );
 
-                // print current geodetic position
-                let (lat, lon, alt) = satellite.current_geodetic_position();
-                println!(
-                    "  Geo         : {:.4}°, {:.4}° at {:.1} km",
-                    lat, lon, alt
-                );
+                // // print current geodetic position
+                // let (lat, lon, alt) = satellite.current_geodetic_position();
+                // println!(
+                //     "  Geo         : {:.4}°, {:.4}° at {:.1} km",
+                //     lat, lon, alt
+                // );
 
-                // print current velocity
-                let (vx, vy, vz) = satellite.current_velocity();
-                let speed = (vx.powi(2) + vy.powi(2) + vz.powi(2)).sqrt();
-                println!(
-                    "  Velocity    : {:.2} km/s", speed
-                );
+                // // print current velocity
+                // let (vx, vy, vz) = satellite.current_velocity();
+                // let speed = (vx.powi(2) + vy.powi(2) + vz.powi(2)).sqrt();
+                // println!(
+                //     "  Velocity    : {:.2} km/s", speed
+                // );
+
+                // println!();
 
                 // spawn satellite in 3D
                 let position = satellite.current_position();
@@ -144,8 +146,6 @@ fn setup(
                     Transform::from_translation(position),
                     satellite.clone(),
                 ));
-
-                println!();
             }
 
             render_orbits(&satellites, &mut commands, &mut meshes, &mut materials);
