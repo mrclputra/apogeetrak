@@ -6,6 +6,10 @@ use reqwest::Error;
 use reqwest::header::USER_AGENT;
 use sgp4::Prediction;
 
+// TEMP
+use std::fs;
+use std::path::Path;
+
 use crate::EARTH_RADIUS;
 
 // unified satellite component type
@@ -170,19 +174,37 @@ pub fn sgp4_to_cartesian(prediction: &Prediction) -> Vec3 {
 
 // async function to actually fetch and parse the satellite data
 pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
-    // call fileserver here
-    let url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=tle";
+    // DEV: toggle to select source
+    let load_from_file = false;
 
-    let response = reqwest::Client::new()
-        .get(url)
-        .header(USER_AGENT, "apogeetrak-satellite-tracker")
-        .send()
-        .await?
-        .text()
-        .await?;
+    let tle_data = if load_from_file {
+        // load from local file
+        let path = Path::new("assets/data/gnss.txt");
+        match fs::read_to_string(path) {
+            Ok(contents) => {
+                println!("Loaded TLE data from local file: {:?}", path);
+                contents
+            }
+            Err(err) => {
+                eprintln!("Failed to read TLE file: {err}");
+                return Ok(vec![]);
+            }
+        }
+    } else {
+        // load from remote URL (keep this intact)
+        let url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=tle";
+        let response = reqwest::Client::new()
+            .get(url)
+            .header(USER_AGENT, "apogeetrak-satellite-tracker")
+            .send()
+            .await?;
+
+        println!("Fetched TLE data from remote URL: {url}");
+        response.text().await?
+    };
 
     // parse the TLE data
-    let lines: Vec<&str> = response.lines().collect();
+    let lines: Vec<&str> = tle_data.lines().collect();
     let mut satellites: Vec<Satellite> = Vec::new();
 
     for chunk in lines.chunks(3) {
@@ -193,5 +215,6 @@ pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
         }
     }
 
+    println!("Successfully parsed {} satellites.", satellites.len());
     Ok(satellites)
 }
