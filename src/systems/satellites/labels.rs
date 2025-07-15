@@ -5,7 +5,7 @@ use bevy::render::camera::Camera;
 use bevy::window::Window;
 
 use crate::systems::satellites::tle::Satellite;
-use crate::EARTH_RADIUS;
+use crate::systems::earth::EARTH_RADIUS;
 
 pub struct LabelsPlugin;
 

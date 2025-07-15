@@ -26,7 +26,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let sun_factor = max(0.0, dot(world_normal, light_dir));
     
     // smooth transition between day and night
-    let day_night_blend = smoothstep(0.0, 0.32, sun_factor);
+    let day_night_blend = smoothstep(0.0, 0.25, sun_factor);
     
     // mix the textures based on sun exposure
     let final_color = mix(night_color, day_color, day_night_blend);
