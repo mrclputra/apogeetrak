@@ -4,6 +4,7 @@ use bevy::pbr::MaterialPlugin;
 pub mod materials;
 use materials::{EarthMaterial, CloudMaterial, SunUniform};
 
+use crate::Sun;
 use crate::constants::{
     EARTH_RADIUS, CLOUD_RADIUS, EARTH_ROTATION_SPEED,
     EARTH_DIFFUSE_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_CLOUDS_TEXTURE
@@ -15,9 +16,6 @@ pub struct Earth;
 
 #[derive(Component)]
 pub struct Clouds;
-
-#[derive(Component)]
-pub struct SunLight;
 
 pub struct EarthPlugin;
 
@@ -89,21 +87,11 @@ fn setup_earth(
         Name::new("Clouds"),
         Clouds, // component marker
     ));
-
-    // spawn the sun light
-    commands.spawn((
-        DirectionalLight {
-            illuminance: 1_500.,
-            ..default()
-        },
-        Transform::from_xyz(50000.0, 50000.0, 50000.0).looking_at(Vec3::ZERO, Vec3::Y),
-        SunLight, // component marker for sun tracking
-    ));
 }
 
 // update shaders based on sunlight
 fn update_sun_direction(
-    sun_query: Query<&Transform, (With<SunLight>, Changed<Transform>)>,
+    sun_query: Query<&Transform, (With<Sun>, Changed<Transform>)>,
     earth_query: Query<&MeshMaterial3d<EarthMaterial>, With<Earth>>,
     cloud_query: Query<&MeshMaterial3d<CloudMaterial>, With<Clouds>>,
     mut earth_materials: ResMut<Assets<EarthMaterial>>,

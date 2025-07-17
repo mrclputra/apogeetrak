@@ -3,7 +3,9 @@ use bevy::render::render_resource::*;
 use bevy::reflect::TypePath;
 use bevy::asset::Asset;
 
-// sun direction data
+// sun direction data (needs to be in a struct)
+// this is how to pass sun vector3 data to the earth shader (local only)
+// https://www.w3.org/TR/WGSL/#address-space-layout-constraints
 #[derive(ShaderType, Clone, Copy, Debug)]
 #[repr(C)]
 pub struct SunUniform {

@@ -9,6 +9,9 @@ use systems::ui::UIPlugin;
 use systems::satellites::SatellitePlugin;
 use systems::earth::EarthPlugin;
 
+#[derive(Component)]
+pub struct Sun;
+
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -30,5 +33,15 @@ fn setup_scene(mut commands: Commands) {
         systems::camera::OrbitCamera::new(15000.0, 0.3)
             .with_target(Vec3::ZERO)
             .with_zoom_limits(7000.0, 100000.0)
+    ));
+
+    // spawn the sun light
+    commands.spawn((
+        DirectionalLight {
+            illuminance: 1_500.,
+            ..default()
+        },
+        Transform::from_xyz(50000.0, 50000.0, 50000.0).looking_at(Vec3::ZERO, Vec3::Y),
+        Sun, // component marker for sun tracking
     ));
 }
