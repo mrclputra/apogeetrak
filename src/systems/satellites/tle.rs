@@ -43,21 +43,27 @@ impl Satellite {
     }
 
     // getters
+    #[allow(dead_code)]
     pub fn name(&self) -> &str {
         self.elements.object_name.as_deref().unwrap_or("Unknown")
     }
+    #[allow(dead_code)]
     pub fn norad_id(&self) -> u64 {
         self.elements.norad_id
     }
+    #[allow(dead_code)]
     pub fn intl_id(&self) -> &str {
         self.elements.international_designator.as_deref().unwrap_or("Unknown")
     }
+    #[allow(dead_code)]
     pub fn inclination(&self) -> f64 {
         self.elements.inclination
     }
+    #[allow(dead_code)]
     pub fn mean_motion(&self) -> f64 {
         self.elements.mean_motion
     }
+    #[allow(dead_code)]
     pub fn epoch_datetime(&self) -> &chrono::NaiveDateTime {
         &self.elements.datetime
     }
@@ -138,6 +144,7 @@ impl Satellite {
     }
 
     // get current velocity (vX, vY, vZ)
+    #[allow(dead_code)]
     pub fn current_velocity(&self) -> (f64, f64, f64) {
         let prediction = self.calculate(Utc::now());
         (

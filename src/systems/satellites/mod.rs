@@ -108,8 +108,7 @@ fn setup_satellites(
             });
 
             // spawn satellites
-            for (i, satellite) in satellites.iter().enumerate() {
-                // println!("Object #{}", i + 1);
+            for satellite in &satellites {
                 // println!("  Name        : {}", satellite.name());
                 // println!("  NORAD ID    : {}", satellite.norad_id());
                 // println!("  Intl ID     : {}", satellite.intl_id());

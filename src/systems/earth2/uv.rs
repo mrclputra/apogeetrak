@@ -1,8 +1,6 @@
 use bevy::prelude::*;
 use std::f32::consts::PI;
 
-use crate::constants::EARTH_RADIUS;
-
 pub struct LatLon {
     // radians
     pub latitude: f32,
