@@ -3,7 +3,7 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssetUsages;
 
 use crate::systems::earth::uv::LatLon;
-use crate::config::EARTH_RADIUS;
+use crate::config::{DISPLACEMENT_SCALE, EARTH_RADIUS};
 
 
 /// Generates a spherical mesh face by projecting a flat grid onto a sphere
@@ -13,6 +13,7 @@ pub fn generate_face(
     resolution: u32,
     x_offset: f32,
     y_offset: f32,
+    displacement: Option<&Image>, // optional displacement map
 ) -> Mesh {
     // this creates two perpendicular axes on the cube face
     let axis_a = Vec3::new(normal.y, normal.z, normal.x);
@@ -42,9 +43,9 @@ pub fn generate_face(
             let (lat, lon) = point_coords.as_degrees();
 
             // scale to size
-            let final_point = point_on_unit_sphere.normalize() * EARTH_RADIUS; // 'normalize' makes it spherical
-            vertices.push(final_point);
-            normals.push(point_on_unit_sphere.normalize());
+            // let final_point = point_on_unit_sphere.normalize() * EARTH_RADIUS; // 'normalize' makes it spherical
+            // vertices.push(final_point);
+            // normals.push(point_on_unit_sphere.normalize());
 
             let (mut u, v) = point_coords.to_uv();
 
@@ -64,6 +65,19 @@ pub fn generate_face(
                 u = 0.0;
             }
 
+            // sample displacement
+            let displacement = if let Some(disp_map) = displacement {
+                sample_displacement(disp_map, u, v) * DISPLACEMENT_SCALE
+            } else {
+                0.0
+            };
+
+            // apply displacement
+            let radius = EARTH_RADIUS + displacement;
+            let final_point = point_on_unit_sphere.normalize() * radius;
+
+            vertices.push(final_point);
+            normals.push(point_on_unit_sphere.normalize());
             uvs.push(Vec2::new(u, v));
 
             // build triangles
@@ -80,6 +94,10 @@ pub fn generate_face(
             }
         }
     }
+
+    // after generating vertices, recalculate normals
+    // this is to make sure the normals account for the displacement
+    recalculate_normals(&mut normals, &vertices, &indices);
 
     // build bevy mesh
     let mut mesh = Mesh::new(
@@ -112,4 +130,65 @@ fn cube_point_to_sphere_point(p: Vec3) -> Vec3 {
         y: p.y * y.sqrt(),
         z: p.z * z.sqrt(),
     }
+}
+
+/// Recalculate normals based on actual mesh geometry
+fn recalculate_normals(normals: &mut Vec<Vec3>, vertices: &[Vec3], indices: &[u32]) {
+    for normal in normals.iter_mut() {
+        *normal = Vec3::ZERO;
+    }
+
+    for triangle in indices.chunks(3) {
+        if triangle.len() == 3 {
+            let i0 = triangle[0] as usize;
+            let i1 = triangle[1] as usize;
+            let i2 = triangle[2] as usize;
+
+            let v0 = vertices[i0];
+            let v1 = vertices[i1];
+            let v2 = vertices[i2];
+
+            // calculate face normal
+            let edge1 = v1 - v0;
+            let edge2 = v2 - v0;
+            let face_normal = edge1.cross(edge2).normalize();
+
+            // add face normal to each vertex normal
+            normals[i0] += face_normal;
+            normals[i1] += face_normal;
+            normals[i2] += face_normal;
+        }
+    }
+
+    // normalize all vertex normals
+    for normal in normals.iter_mut() {
+        *normal = normal.normalize();
+    }
+}
+
+/// Sample displacement value from image at UV coordinates
+fn sample_displacement(image: &Image, u: f32, v: f32) -> f32 {
+    // clamp UV coordinates
+    let u = u.clamp(0.0, 1.0);
+    let v = v.clamp(0.0, 1.0);
+
+    let width = image.texture_descriptor.size.width as usize;
+    let height = image.texture_descriptor.size.height as usize;
+
+
+    // UV to pixel coordinates
+    let x = (u * (width - 1) as f32).round() as usize;
+    let y = (v * (height - 1) as f32).round() as usize;
+
+    // get pixel data slice
+    if let Some(data) = image.data.as_ref() {
+        let pixel_index = (y * width + x) * 4; // 4 bytes per pixel (RGBA)
+
+        if pixel_index + 3 < data.len() {
+            // just used red channel
+            return data[pixel_index] as f32 / 255.0;
+        }
+    }
+
+    0.0 // default if not available, or out of bounds
 }

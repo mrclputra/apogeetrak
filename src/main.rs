@@ -18,11 +18,11 @@ pub struct Sun;
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
-        // .add_plugins(WireframePlugin::default())
-        // .insert_resource(WireframeConfig {
-        //     global: true,
-        //     default_color: Color::BLACK,
-        // })
+        .add_plugins(WireframePlugin::default())
+        .insert_resource(WireframeConfig {
+            global: true,
+            default_color: Color::BLACK,
+        })
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
         // .add_plugins(SatellitePlugin)
