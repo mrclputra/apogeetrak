@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::pbr::wireframe::{WireframePlugin, WireframeConfig};
 
 pub mod constants;
 
@@ -6,8 +7,10 @@ pub mod constants;
 mod systems;
 use systems::camera::CameraPlugin;
 use systems::ui::UIPlugin;
-use systems::satellites::SatellitePlugin;
-use systems::earth::EarthPlugin;
+
+use crate::systems::earth2::mesh::generate_sphere;
+// use systems::satellites::SatellitePlugin;
+// use systems::earth::EarthPlugin;
 
 #[derive(Component)]
 pub struct Sun;
@@ -15,17 +18,26 @@ pub struct Sun;
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(WireframePlugin::default())
+        .insert_resource(WireframeConfig {
+            global: true,
+            default_color: Color::BLACK,
+        })
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
-        .add_plugins(SatellitePlugin)
-        .add_plugins(EarthPlugin)
+        // .add_plugins(SatellitePlugin)
+        // .add_plugins(EarthPlugin)
         .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0))) // background color
         .add_systems(Startup, setup_scene)
         .run()
 }
 
 // set up the main scene
-fn setup_scene(mut commands: Commands) {
+fn setup_scene(
+    mut commands: Commands,
+    meshes: ResMut<Assets<Mesh>>,
+    materials: ResMut<Assets<StandardMaterial>>,
+) {
     // spawn camera
     commands.spawn((
         Camera3d::default(),
@@ -44,4 +56,7 @@ fn setup_scene(mut commands: Commands) {
         Transform::from_xyz(50000.0, 50000.0, 50000.0).looking_at(Vec3::ZERO, Vec3::Y),
         Sun, // component marker for sun tracking
     ));
+
+    // spawn the earth (temp, need to move to own plugin)
+    generate_sphere(commands, meshes, materials);
 }
