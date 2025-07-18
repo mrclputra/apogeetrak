@@ -9,7 +9,7 @@ use bevy::asset::Asset;
 #[derive(ShaderType, Clone, Copy, Debug)]
 #[repr(C)]
 pub struct SunUniform {
-    pub sun_direction: Vec3,
+    pub direction: Vec3,
     pub _padding: f32, // ensures proper 16-byte GPU alignment
 }
 

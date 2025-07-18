@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 
-use chrono::Utc;
-use chrono::DateTime;
+use chrono::{Utc, DateTime, Datelike};
 use reqwest::Error;
 use reqwest::header::USER_AGENT;
 use sgp4::Prediction;
@@ -43,27 +42,21 @@ impl Satellite {
     }
 
     // getters
-    #[allow(dead_code)]
     pub fn name(&self) -> &str {
         self.elements.object_name.as_deref().unwrap_or("Unknown")
     }
-    #[allow(dead_code)]
     pub fn norad_id(&self) -> u64 {
         self.elements.norad_id
     }
-    #[allow(dead_code)]
     pub fn intl_id(&self) -> &str {
         self.elements.international_designator.as_deref().unwrap_or("Unknown")
     }
-    #[allow(dead_code)]
     pub fn inclination(&self) -> f64 {
         self.elements.inclination
     }
-    #[allow(dead_code)]
     pub fn mean_motion(&self) -> f64 {
         self.elements.mean_motion
     }
-    #[allow(dead_code)]
     pub fn epoch_datetime(&self) -> &chrono::NaiveDateTime {
         &self.elements.datetime
     }
@@ -152,6 +145,40 @@ impl Satellite {
             prediction.velocity[1],
             prediction.velocity[2]
         )
+    }
+
+    // just prints contents
+    #[allow(dead_code)]
+    pub fn print(&self) {
+        println!("  Name        : {}", self.name());
+        println!("  NORAD ID    : {}", self.norad_id());
+        println!("  Intl ID     : {}", self.intl_id());
+        println!("  Inclination : {:.2}", self.inclination());
+        println!("  Mean Motion : {:.2}", self.mean_motion());
+        println!("  Epoch       : Year {} Day {:.2}", self.epoch_datetime().year(), self.epoch_datetime().day());
+        println!();
+
+        // print current ECI position
+        let pos = self.current_position();
+        println!(
+            "  ECI         : {:.2} km, {:.2} km, {:.2} km", pos.x, pos.y, pos.z
+        );
+
+        // print current geodetic position
+        let (lat, lon, alt) = self.current_geodetic_position();
+        println!(
+            "  Geo         : {:.4}°, {:.4}° at {:.1} km",
+            lat, lon, alt
+        );
+
+        // print current velocity
+        let (vx, vy, vz) = self.current_velocity();
+        let speed = (vx.powi(2) + vy.powi(2) + vz.powi(2)).sqrt();
+        println!(
+            "  Velocity    : {:.2} km/s", speed
+        );
+
+        println!();
     }
 }
 

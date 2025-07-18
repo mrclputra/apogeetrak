@@ -10,7 +10,7 @@ use systems::ui::UIPlugin;
 
 // use systems::satellites::SatellitePlugin;
 // use systems::earth::EarthPlugin;
-use systems::earth2::EarthPlugin;
+use systems::earth::EarthPlugin;
 
 #[derive(Component)]
 pub struct Sun;
@@ -18,11 +18,11 @@ pub struct Sun;
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(WireframePlugin::default())
-        .insert_resource(WireframeConfig {
-            global: true,
-            default_color: Color::BLACK,
-        })
+        // .add_plugins(WireframePlugin::default())
+        // .insert_resource(WireframeConfig {
+        //     global: true,
+        //     default_color: Color::BLACK,
+        // })
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
         // .add_plugins(SatellitePlugin)

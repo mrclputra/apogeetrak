@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssetUsages;
 
-use crate::systems::earth2::uv::LatLon;
+use crate::systems::earth::uv::LatLon;
 use crate::constants::EARTH_RADIUS;
 
 

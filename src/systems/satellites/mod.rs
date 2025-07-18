@@ -109,6 +109,15 @@ fn setup_satellites(
 
             // spawn satellites
             for satellite in &satellites {
+                // spawn satellite in 3D
+                let position = satellite.current_position();
+                commands.spawn((
+                    Mesh3d(meshes.add(Sphere::new(50.0).mesh().ico(8).unwrap())),
+                    MeshMaterial3d(satellite_material.clone()),
+                    Transform::from_translation(position),
+                    satellite.clone(),
+                ));
+
                 // println!("  Name        : {}", satellite.name());
                 // println!("  NORAD ID    : {}", satellite.norad_id());
                 // println!("  Intl ID     : {}", satellite.intl_id());
@@ -138,15 +147,6 @@ fn setup_satellites(
                 // );
 
                 // println!();
-
-                // spawn satellite in 3D
-                let position = satellite.current_position();
-                commands.spawn((
-                    Mesh3d(meshes.add(Sphere::new(50.0).mesh().ico(8).unwrap())),
-                    MeshMaterial3d(satellite_material.clone()),
-                    Transform::from_translation(position),
-                    satellite.clone(),
-                ));
             }
 
             render_orbits(&satellites, &mut commands, &mut meshes, &mut materials);
