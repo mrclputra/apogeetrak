@@ -6,7 +6,7 @@ use crate::constants::EARTH_RADIUS;
 
 /// Generates a spherical mesh face by projecting a flat grid onto a sphere
 /// Based on Sebastian Lague's implementation
-fn generate_face(
+pub fn generate_face(
     normal: Vec3,
     resolution: u32,
     x_offset: f32,
@@ -63,35 +63,6 @@ fn generate_face(
     // mesh.generate_tangents().unwrap(); // need this for normal mapping (TODO)
 
     mesh
-}
-
-pub fn generate_sphere(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    // asset_server: Res<AssetServer>,
-) {
-    let faces = vec![
-        Vec3::X,        // right
-        Vec3::NEG_X,    // left
-        Vec3::Y,        // top
-        Vec3::NEG_Y,    // bottom
-        Vec3::Z,        // front
-        Vec3::NEG_Z,    // back
-    ];
-
-    let offsets = vec![(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)];
-
-    for direction in faces {
-        for offset in &offsets {
-            commands.spawn((
-                Mesh3d(meshes.add(
-                    generate_face(direction, 32, offset.0, offset.1),
-                )),
-                MeshMaterial3d(materials.add(Color::WHITE)),
-            ));
-        }
-    }
 }
 
 /// Converts a point on a unit cube to the corresponding point on a unit sphere

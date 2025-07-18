@@ -8,9 +8,9 @@ mod systems;
 use systems::camera::CameraPlugin;
 use systems::ui::UIPlugin;
 
-use crate::systems::earth2::mesh::generate_sphere;
 // use systems::satellites::SatellitePlugin;
 // use systems::earth::EarthPlugin;
+use systems::earth2::EarthPlugin;
 
 #[derive(Component)]
 pub struct Sun;
@@ -26,17 +26,15 @@ fn main() -> bevy::app::AppExit {
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
         // .add_plugins(SatellitePlugin)
-        // .add_plugins(EarthPlugin)
-        .insert_resource(ClearColor(Color::srgb(0.0, 0.0, 0.0))) // background color
-        .add_systems(Startup, setup_scene)
+        .add_plugins(EarthPlugin)
+        .insert_resource(ClearColor(Color::BLACK)) // background color
+        .add_systems(Startup, start)
         .run()
 }
 
 // set up the main scene
-fn setup_scene(
+fn start(
     mut commands: Commands,
-    meshes: ResMut<Assets<Mesh>>,
-    materials: ResMut<Assets<StandardMaterial>>,
 ) {
     // spawn camera
     commands.spawn((
@@ -56,7 +54,4 @@ fn setup_scene(
         Transform::from_xyz(50000.0, 50000.0, 50000.0).looking_at(Vec3::ZERO, Vec3::Y),
         Sun, // component marker for sun tracking
     ));
-
-    // spawn the earth (temp, need to move to own plugin)
-    generate_sphere(commands, meshes, materials);
 }
