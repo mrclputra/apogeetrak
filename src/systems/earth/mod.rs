@@ -7,8 +7,9 @@ pub mod uv;
 use mesh::generate_face;
 use materials::{EarthMaterial, CloudMaterial, SunUniform};
 use crate::{config::{
-    EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_OCEAN_MASK_TEXTURE,
-    CLOUD_RADIUS,  EARTH_ROTATION_SPEED
+    EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, EARTH_NIGHT_TEXTURE, 
+    EARTH_OCEAN_MASK_TEXTURE, EARTH_SPECULAR_TEXTURE,
+    CLOUD_RADIUS, EARTH_ROTATION_SPEED
 }, Sun};
 
 pub struct EarthPlugin;
@@ -49,6 +50,7 @@ fn start(
     let night_texture = asset_server.load(EARTH_NIGHT_TEXTURE);
     let cloud_texture = asset_server.load(EARTH_CLOUDS_TEXTURE);
     let ocean_mask_texture = asset_server.load(EARTH_OCEAN_MASK_TEXTURE);
+    let specular_texture = asset_server.load(EARTH_SPECULAR_TEXTURE);
 
     // generate earth mesh
     let faces = vec![
@@ -71,11 +73,12 @@ fn start(
                 MeshMaterial3d(earth_materials.add(EarthMaterial {
                     day_texture: diffuse_texture.clone(),
                     night_texture: night_texture.clone(),
+                    ocean_mask: ocean_mask_texture.clone(),
+                    specular_map: specular_texture.clone(),
                     sun_uniform: SunUniform {
                         direction: sun_direction,
                         _padding: 0.0,
                     },
-                    ocean_mask: ocean_mask_texture.clone(),
                 })),
                 // Transform::from_scale(Vec3::splat(EARTH_RADIUS)),
                 // GlobalTransform::default(),
@@ -85,7 +88,7 @@ fn start(
         }
     }
 
-    // create cloud sphere
+    // create cloud sphere (unchanged)
     let mut cloud_sphere = Sphere::new(CLOUD_RADIUS).mesh().uv(32, 64);
     cloud_sphere.generate_tangents().unwrap();
 

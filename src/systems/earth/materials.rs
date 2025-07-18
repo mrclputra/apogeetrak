@@ -25,7 +25,10 @@ pub struct EarthMaterial {
     #[texture(4)]
     #[sampler(5)]
     pub ocean_mask: Handle<Image>,
-    #[uniform(6)]
+    #[texture(6)]
+    #[sampler(7)]
+    pub specular_map: Handle<Image>,
+    #[uniform(8)]
     pub sun_uniform: SunUniform,
 }
 
