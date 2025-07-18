@@ -7,12 +7,9 @@ pub mod uv;
 use mesh::generate_face;
 use materials::{EarthMaterial, CloudMaterial, SunUniform};
 use crate::{constants::{
-    CLOUD_RADIUS, EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_RADIUS, EARTH_ROTATION_SPEED
+    CLOUD_RADIUS, EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, 
+    EARTH_NIGHT_TEXTURE, EARTH_ROTATION_SPEED
 }, Sun};
-
-// grounded tag
-#[derive(Component)]
-pub struct Grounded;
 
 pub struct EarthPlugin;
 
@@ -25,6 +22,10 @@ impl Plugin for EarthPlugin {
     }
 }
 
+// grounded tag
+#[derive(Component)]
+pub struct Grounded;
+
 fn start(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -32,6 +33,14 @@ fn start(
     mut cloud_materials: ResMut<Assets<CloudMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
+    let _earth = commands
+        .spawn((
+            Grounded,
+            Transform::default(),
+            GlobalTransform::default(),
+        ))
+        .id();
+
     // sun direction
     let sun_direction = Vec3::new(1.0, 1.0, 1.0).normalize();
 
@@ -68,8 +77,9 @@ fn start(
                 })),
                 // Transform::from_scale(Vec3::splat(EARTH_RADIUS)),
                 // GlobalTransform::default(),
-                Grounded,
-            ));
+                // Grounded,
+            ))
+            .insert(ChildOf(_earth));
         }
     }
 
@@ -78,7 +88,7 @@ fn start(
     cloud_sphere.generate_tangents().unwrap();
 
     // spawn the cloud sphere
-    let ground = commands.spawn((
+    commands.spawn((
         Mesh3d(meshes.add(cloud_sphere)),
         MeshMaterial3d(cloud_materials.add(CloudMaterial {
             cloud_texture,
@@ -86,12 +96,13 @@ fn start(
                 direction: sun_direction,
                 _padding: 0.0,
             },
-            cloud_opacity: 0.7, // tweak this for cloud visibility
+            cloud_opacity: 0.5, // tweak this for cloud visibility
         })),
         Transform::from_xyz(0.0, 0.0, 0.0)
             .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
-        Grounded,
-    ));
+        // Grounded,
+    ))
+    .insert(ChildOf(_earth));
 }
 
 // update shaders
@@ -124,11 +135,11 @@ fn update_shaders(
 // rotate earth
 fn rotate(
     time: Res<Time>,
-    mut grounded_query: Query<&mut Transform, With<Grounded>>
+    mut earth_query: Query<&mut Transform, With<Grounded>>
 ) {
-    let rotation_delta = Quat::from_rotation_y(EARTH_ROTATION_SPEED * time.delta_secs());
+    let delta_rotation = Quat::from_rotation_y(EARTH_ROTATION_SPEED * time.delta_secs());
 
-    for mut transform in grounded_query.iter_mut() {
-        transform.rotation = transform.rotation * rotation_delta;
+    if let Ok(mut transform) = earth_query.single_mut() {
+        transform.rotation = transform.rotation * delta_rotation;
     }
 }
