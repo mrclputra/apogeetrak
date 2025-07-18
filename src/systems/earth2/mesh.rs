@@ -2,10 +2,12 @@ use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssetUsages;
 
+use crate::systems::earth2::uv::LatLon;
 use crate::constants::EARTH_RADIUS;
 
+
 /// Generates a spherical mesh face by projecting a flat grid onto a sphere
-/// Based on Sebastian Lague's implementation
+/// Based on Sebastian Lague and Grayson Head's implementation
 pub fn generate_face(
     normal: Vec3,
     resolution: u32,
@@ -20,6 +22,9 @@ pub fn generate_face(
     let mut vertices: Vec<Vec3> = Vec::new();
     let mut indices: Vec<u32> = Vec::new();
     let mut normals: Vec<Vec3> = Vec::new();
+    let mut uvs: Vec<Vec2> = Vec::new();
+
+    let mut first_longitude = 0.0;
 
     // create a grid of vertices
     for y in 0..resolution {
@@ -32,10 +37,34 @@ pub fn generate_face(
                 normal + (percent.x - x_offset) * axis_a + (percent.y - y_offset) * axis_b;
             let point_on_unit_sphere = cube_point_to_sphere_point(point_on_unit_cube);
 
+            // uv
+            let point_coords = LatLon::from(point_on_unit_sphere.normalize());
+            let (lat, lon) = point_coords.as_degrees();
+
             // scale to size
             let final_point = point_on_unit_sphere.normalize() * EARTH_RADIUS; // 'normalize' makes it spherical
             vertices.push(final_point);
             normals.push(point_on_unit_sphere.normalize());
+
+            let (mut u, v) = point_coords.to_uv();
+
+            // handle UV seam cases to prevent texture distortion
+            if y == 0 && x == 0 {
+                first_longitude = lon;
+            }
+
+            // implement wrapping, as polygons may have to cross texture edge
+            // if starting on negative -long crossing into +long, set u to 0.0
+            if first_longitude < 0.0 && lon > 0.0 && lat < 89.0 && lat > -89.0 {
+                u = 0.0;
+            }
+
+            // if below -40 degrees lat and tile starts at 180, set u to 0.0
+            if x == 0 && lon == 180.0 && lat < -40.0 {
+                u = 0.0;
+            }
+
+            uvs.push(Vec2::new(u, v));
 
             // build triangles
             if x != resolution - 1 && y != resolution - 1 {
@@ -60,7 +89,8 @@ pub fn generate_face(
     mesh.insert_indices(Indices::U32(indices));
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, vertices);
     mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
-    // mesh.generate_tangents().unwrap(); // need this for normal mapping (TODO)
+    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+    mesh.generate_tangents().unwrap(); // need this for normal mapping
 
     mesh
 }
