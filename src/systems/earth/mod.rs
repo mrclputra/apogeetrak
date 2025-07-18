@@ -6,9 +6,9 @@ pub mod uv;
 
 use mesh::generate_face;
 use materials::{EarthMaterial, CloudMaterial, SunUniform};
-use crate::{constants::{
-    CLOUD_RADIUS, EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, 
-    EARTH_NIGHT_TEXTURE, EARTH_ROTATION_SPEED
+use crate::{config::{
+    EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_OCEAN_MASK_TEXTURE,
+    CLOUD_RADIUS,  EARTH_ROTATION_SPEED
 }, Sun};
 
 pub struct EarthPlugin;
@@ -48,6 +48,7 @@ fn start(
     let diffuse_texture = asset_server.load(EARTH_DIFFUSE_TEXTURE);
     let night_texture = asset_server.load(EARTH_NIGHT_TEXTURE);
     let cloud_texture = asset_server.load(EARTH_CLOUDS_TEXTURE);
+    let ocean_mask_texture = asset_server.load(EARTH_OCEAN_MASK_TEXTURE);
 
     // generate earth mesh
     let faces = vec![
@@ -65,7 +66,7 @@ fn start(
         for offset in &offsets {
             commands.spawn((
                 Mesh3d(meshes.add(
-                    generate_face(direction, 24, offset.0, offset.1),
+                    generate_face(direction, 22, offset.0, offset.1),
                 )),
                 MeshMaterial3d(earth_materials.add(EarthMaterial {
                     day_texture: diffuse_texture.clone(),
@@ -74,6 +75,7 @@ fn start(
                         direction: sun_direction,
                         _padding: 0.0,
                     },
+                    ocean_mask: ocean_mask_texture.clone(),
                 })),
                 // Transform::from_scale(Vec3::splat(EARTH_RADIUS)),
                 // GlobalTransform::default(),

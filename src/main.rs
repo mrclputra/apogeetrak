@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::pbr::wireframe::{WireframePlugin, WireframeConfig};
 
-pub mod constants;
+pub mod config;
 
 // import camera and systems
 mod systems;
@@ -48,7 +48,7 @@ fn start(
     // spawn the sun light
     commands.spawn((
         DirectionalLight {
-            illuminance: 1_500.,
+            illuminance: 1_700.,
             ..default()
         },
         Transform::from_xyz(50000.0, 50000.0, 50000.0).looking_at(Vec3::ZERO, Vec3::Y),

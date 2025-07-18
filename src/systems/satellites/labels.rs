@@ -5,7 +5,7 @@ use bevy::render::camera::Camera;
 use bevy::window::Window;
 
 use crate::systems::satellites::Satellite;
-use crate::constants::EARTH_RADIUS;
+use crate::config::EARTH_RADIUS;
 
 // full ui screen container component
 #[derive(Component)]

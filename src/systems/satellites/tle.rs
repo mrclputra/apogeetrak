@@ -9,7 +9,7 @@ use sgp4::Prediction;
 use std::fs;
 use std::path::Path;
 
-use crate::constants::EARTH_RADIUS;
+use crate::config::EARTH_RADIUS;
 
 // unified satellite component type
 #[derive(Component, Clone)]

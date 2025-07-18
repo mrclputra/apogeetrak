@@ -3,7 +3,7 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssetUsages;
 
 use crate::systems::earth::uv::LatLon;
-use crate::constants::EARTH_RADIUS;
+use crate::config::EARTH_RADIUS;
 
 
 /// Generates a spherical mesh face by projecting a flat grid onto a sphere

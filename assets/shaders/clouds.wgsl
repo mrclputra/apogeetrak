@@ -23,7 +23,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
    let lighting = max(0.0, dot(normal, light_dir));
 
    // mixed cloud color
-   let shadow_color = vec3<f32>(0.1, 0.1, 0.17);  // night clouds
+   let shadow_color = vec3<f32>(0.02, 0.02, 0.04);  // night clouds
    let lit_color = vec3<f32>(1.0, 1.0, 1.0);     // day clouds
    let final_color = mix(shadow_color, lit_color, lighting);
 
