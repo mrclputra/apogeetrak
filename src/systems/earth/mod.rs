@@ -23,7 +23,7 @@ impl Plugin for EarthPlugin {
             .add_systems(Update, (
                 generate_earth_faces.run_if(resource_exists::<EarthData>),
                 update_shaders, 
-                rotate
+                // rotate
             ));
     }
 }
@@ -140,7 +140,7 @@ fn generate_earth_faces(
                 Mesh3d(meshes.add(
                     generate_face(
                         direction, 
-                        128,
+                        64,
                         offset.0, 
                         offset.1,
                         displacement_image,

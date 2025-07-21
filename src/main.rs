@@ -8,8 +8,7 @@ mod systems;
 use systems::camera::CameraPlugin;
 use systems::ui::UIPlugin;
 
-// use systems::satellites::SatellitePlugin;
-// use systems::earth::EarthPlugin;
+use systems::satellites::SatellitePlugin;
 use systems::earth::EarthPlugin;
 
 #[derive(Component)]
@@ -18,14 +17,14 @@ pub struct Sun;
 fn main() -> bevy::app::AppExit {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugins(WireframePlugin::default())
-        .insert_resource(WireframeConfig {
-            global: true,
-            default_color: Color::BLACK,
-        })
+        // .add_plugins(WireframePlugin::default())
+        // .insert_resource(WireframeConfig {
+        //     global: true,
+        //     default_color: Color::BLACK,
+        // })
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
-        // .add_plugins(SatellitePlugin)
+        .add_plugins(SatellitePlugin)
         .add_plugins(EarthPlugin)
         .insert_resource(ClearColor(Color::BLACK)) // background color
         .add_systems(Startup, start)

@@ -1,6 +1,7 @@
 // Earth measurements (in kilometers)
 pub const EARTH_RADIUS: f32 = 6378.0;
-pub const CLOUD_RADIUS: f32 = 6428.0;
+pub const CLOUD_RADIUS: f32 = 6528.0;
+pub const DISPLACEMENT_SCALE: f32 = 100.0; // maximum displacement, in km
 
 // Rotation speeds
 pub const EARTH_ROTATION_SPEED: f32 = 0.01;
@@ -13,4 +14,3 @@ pub const EARTH_OCEAN_MASK_TEXTURE: &str = "textures/ocean_mask.png";
 pub const EARTH_SPECULAR_TEXTURE: &str = "textures/specular.tif";
 
 pub const EARTH_DISPLACEMENT_TEXTURE: &str = "textures/topography.png";
-pub const DISPLACEMENT_SCALE: f32 = 10.0; // maximum displacement, in km

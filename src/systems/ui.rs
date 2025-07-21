@@ -81,8 +81,12 @@ fn update_datetime(
     mut text_query: Query<&mut Text, With<DateTimeDisplay>>,
 ) {
     if let Ok(mut text) = text_query.single_mut() {
-        let now: DateTime<Utc> = Utc::now();
-        // format as: "2025-07-11 15:30:45 UTC"
-        text.0 = format!("Time: {} UTC", now.format("%Y-%m-%d %H:%M:%S"));
+        // Create a fixed datetime (e.g., 2025-01-01 12:00:00 UTC)
+        let fixed_datetime = chrono::DateTime::parse_from_rfc3339("2000-01-01T12:00:00Z")
+            .unwrap()
+            .with_timezone(&Utc);
+        
+        // format
+        text.0 = format!("Time: {} UTC", fixed_datetime.format("%Y-%m-%d %H:%M:%S"));
     }
 }
