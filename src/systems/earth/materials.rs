@@ -13,6 +13,21 @@ pub struct SunUniform {
     pub _padding: f32, // ensures proper 16-byte GPU alignment
 }
 
+// atmosphere uniform data
+#[derive(ShaderType, Clone, Copy, Debug)]
+#[repr(C)]
+pub struct AtmosphereUniform {
+    pub sun_direction: Vec3,
+    pub camera_position: Vec3,
+
+    // https://en.wikipedia.org/wiki/Rayleigh_scattering
+    pub rayleigh_coeff: Vec3,
+    pub mie_coeff: f32,
+    pub sun_intensity: f32,
+    pub atmosphere_radius: f32,
+    pub _padding: f32,
+}
+
 // earth material
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct EarthMaterial {
@@ -42,24 +57,41 @@ impl Material for EarthMaterial {
     }
 }
 
-// cloud material
+// atmosphere material
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-pub struct CloudMaterial {
-    #[texture(0)]
-    #[sampler(1)]
-    pub cloud_texture: Handle<Image>,
-    #[uniform(2)]
-    pub sun_uniform: SunUniform,
-    #[uniform(3)]
-    pub cloud_opacity: f32, // runtime adjustments
+pub struct AtmosphereMaterial {
+    #[uniform(0)]
+    pub atmosphere_uniform: AtmosphereUniform,
 }
 
-impl Material for CloudMaterial {
+impl Material for AtmosphereMaterial {
     fn fragment_shader() -> ShaderRef {
-        "shaders/clouds.wgsl".into()
+        "shaders/atmosphere.wgsl".into()
     }
 
     fn alpha_mode(&self) -> AlphaMode {
-        AlphaMode::Blend // transparency support
+        AlphaMode::Blend
     }
 }
+
+// // cloud material
+// #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+// pub struct CloudMaterial {
+//     #[texture(0)]
+//     #[sampler(1)]
+//     pub cloud_texture: Handle<Image>,
+//     #[uniform(2)]
+//     pub sun_uniform: SunUniform,
+//     #[uniform(3)]
+//     pub cloud_opacity: f32, // runtime adjustments
+// }
+
+// impl Material for CloudMaterial {
+//     fn fragment_shader() -> ShaderRef {
+//         "shaders/clouds.wgsl".into()
+//     }
+
+//     fn alpha_mode(&self) -> AlphaMode {
+//         AlphaMode::Blend // transparency support
+//     }
+// }

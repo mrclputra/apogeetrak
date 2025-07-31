@@ -1,7 +1,13 @@
 // Earth measurements (in kilometers)
 pub const EARTH_RADIUS: f32 = 6378.0;
-pub const CLOUD_RADIUS: f32 = 6528.0;
+pub const ATMOSPHERE_RADIUS: f32 = 6478.0;
 pub const DISPLACEMENT_SCALE: f32 = 100.0; // maximum displacement, in km
+
+// Atmospheric scattering parameters
+// https://physics.stackexchange.com/questions/241190
+pub const RAYLEIGH_COEFF: [f32; 3] = [0.0000055, 0.0000130, 0.0000224]; // RGB wavelengths
+pub const MIE_COEFF: f32 = 0.000021;
+pub const SUN_INTENSITY: f32 = 22.0;
 
 // Rotation speeds
 pub const EARTH_ROTATION_SPEED: f32 = 0.01;
