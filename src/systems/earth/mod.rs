@@ -101,8 +101,8 @@ fn start(
         Transform::from_xyz(0.0, 0.0, 0.0)
             .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
         Atmosphere,
-    ))
-    .insert(ChildOf(_earth));
+    ));
+    // .insert(ChildOf(_earth));
 
     // // create cloud sphere
     // let mut cloud_sphere = Sphere::new(CLOUD_RADIUS).mesh().uv(32, 64);

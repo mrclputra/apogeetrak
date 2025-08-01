@@ -22,11 +22,11 @@ fn main() -> bevy::app::AppExit {
             watch_for_changes_override: Some(true),
             ..default()
         }))
-        // .add_plugins(WireframePlugin::default())
-        // .insert_resource(WireframeConfig {
-        //     global: true,
-        //     default_color: Color::BLACK,
-        // })
+        .add_plugins(WireframePlugin::default())
+        .insert_resource(WireframeConfig {
+            global: true,
+            default_color: Color::BLACK,
+        })
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
         // .add_plugins(SatellitePlugin)

@@ -97,7 +97,7 @@ pub fn generate_face(
 
     // after generating vertices, recalculate normals
     // this is to make sure the normals account for the displacement
-    // recalculate_normals(&mut normals, &vertices, &indices);
+    recalculate_normals(&mut normals, &vertices, &indices);
 
     // the problem with recalculating normals is that it messes up the day/night shader
     // i.e. cities on mountain sides becomes bright earlier/later than they should
@@ -138,9 +138,8 @@ fn cube_point_to_sphere_point(p: Vec3) -> Vec3 {
 /// Recalculate normals based on actual mesh geometry
 /// TODO: review implementation, does it fuck with the UV maps?
 fn recalculate_normals(normals: &mut Vec<Vec3>, vertices: &[Vec3], indices: &[u32]) {
-    for normal in normals.iter_mut() {
-        *normal = Vec3::ZERO;
-    }
+    // reset normals
+    normals.fill(Vec3::ZERO);
 
     for triangle in indices.chunks(3) {
         if triangle.len() == 3 {
@@ -155,18 +154,30 @@ fn recalculate_normals(normals: &mut Vec<Vec3>, vertices: &[Vec3], indices: &[u3
             // calculate face normal
             let edge1 = v1 - v0;
             let edge2 = v2 - v0;
-            let face_normal = edge1.cross(edge2).normalize();
+            let mut face_normal = edge1.cross(edge2);
 
-            // add face normal to each vertex normal
-            normals[i0] += face_normal;
-            normals[i1] += face_normal;
-            normals[i2] += face_normal;
+            // check for degenrate triangle
+            let face_normal_length = face_normal.length();
+            if face_normal_length > 1e-6 {
+                face_normal = face_normal / face_normal_length;
+
+                // add face normal to each vertex normal
+                normals[i0] += face_normal;
+                normals[i1] += face_normal;
+                normals[i2] += face_normal;
+            }
         }
     }
 
     // normalize all vertex normals
     for normal in normals.iter_mut() {
-        *normal = normal.normalize();
+        let length = normal.length();
+        if length > 1e-6 {
+            *normal = *normal / length;
+        } else {
+            // fallback for isolated vertices
+            *normal = Vec3::Y;
+        }
     }
 }
 

@@ -48,7 +48,7 @@ fn calculate_specular(
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     // sample all our textures
     let day_color = textureSample(day_texture, day_sampler, in.uv);
-    let night_color = textureSample(night_texture, night_sampler, in.uv);
+    let night_color = textureSample(night_texture, night_sampler, in.uv).rgb * vec3<f32>(0.94, 0.78, 0.67);
     let mask_value = textureSample(ocean_mask, ocean_mask_sampler, in.uv).r;
     let specular_value = textureSample(specular_map, specular_map_sampler, in.uv).r;
 
@@ -64,7 +64,9 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let sun_factor = max(0.0, dot(world_normal, light_dir) + 0.2);
     
     // transition between day and night
-    let day_night_blend = smoothstep(0.0, 0.32, sun_factor);
+    // let day_night_blend = smoothstep(0.0, 0.32, sun_factor);
+    let base_blend = 0.003;
+    let day_night_blend = base_blend + (1.0 - base_blend) * smoothstep(0.0, 0.52, sun_factor);
     
     // mix textures based on sun exposure
     var final_color = mix(night_color.rgb, day_color.rgb, day_night_blend);
