@@ -5,8 +5,8 @@ pub mod config;
 
 // import camera and systems
 mod systems;
-#[cfg(debug_assertions)]
-use bevy::render::settings::{WgpuFeatures, WgpuSettings};
+// #[cfg(debug_assertions)]
+// use bevy::render::settings::{WgpuFeatures, WgpuSettings};
 use systems::camera::CameraPlugin;
 use systems::ui::UIPlugin;
 

@@ -1,96 +1,83 @@
 use bevy::prelude::*;
-// use bevy::render::texture::Image;
 
 pub mod materials;
 pub mod mesh;
 pub mod uv;
 
-use mesh::generate_face;
+use mesh::generate_earth_mesh;
 use materials::{EarthMaterial, AtmosphereMaterial, SunUniform, AtmosphereUniform};
 use crate::{config::{
-    ATMOSPHERE_RADIUS, EARTH_DIFFUSE_TEXTURE, EARTH_DISPLACEMENT_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_OCEAN_MASK_TEXTURE, EARTH_ROTATION_SPEED, EARTH_SPECULAR_TEXTURE, MIE_COEFF, RAYLEIGH_COEFF, SUN_INTENSITY
+    ATMOSPHERE_RADIUS, EARTH_DIFFUSE_TEXTURE, EARTH_DISPLACEMENT_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_OCEAN_MASK_TEXTURE, EARTH_RADIUS, EARTH_ROTATION_SPEED, EARTH_SPECULAR_TEXTURE, MIE_COEFF, RAYLEIGH_COEFF, SUN_INTENSITY
 }, Sun};
 
 pub struct EarthPlugin;
 
 impl Plugin for EarthPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(MaterialPlugin::<EarthMaterial>::default())
+        app
+            .add_plugins(MaterialPlugin::<EarthMaterial>::default())
             .add_plugins(MaterialPlugin::<AtmosphereMaterial>::default())
             .add_systems(Startup, start)
             .add_systems(Update, (
-                generate_earth_faces.run_if(resource_exists::<EarthData>),
-                update_shaders, 
+                update_shaders,
+                update,
                 rotate
             ));
     }
 }
 
-// grounded tag
-#[derive(Component)]
-pub struct Grounded;
-
 // atmosphere tag
 #[derive(Component)]
 pub struct Atmosphere;
 
-// holds everything needed for earth generation
-// decided to bundle it into a struct so it can be disposed of together later
-#[derive(Resource)]
-struct EarthData {
-    displacement_handle: Handle<Image>,
-    earth_entity: Entity,
-    earth_material: Handle<EarthMaterial>,
-}
+// earth tag
+#[derive(Component)]
+pub struct Earth;
+
+// displacement placeholder replacement
+#[derive(Component)]
+struct Placeholder(Handle<Image>);
 
 fn start(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut earth_materials: ResMut<Assets<EarthMaterial>>,
-    mut atmosphere_materials: ResMut<Assets<AtmosphereMaterial>>,
+    mut earth_material: ResMut<Assets<EarthMaterial>>,
+    mut atmosphere_material: ResMut<Assets<AtmosphereMaterial>>,
     asset_server: Res<AssetServer>,
 ) {
     // sun direction
-    let sun_direction = Vec3::new(1.0, 1.0, 1.0).normalize();
+    let _sun_direction = Vec3::new(1.0, 1.0, 1.0).normalize();
 
     // load all textures
-    let diffuse_texture = asset_server.load(EARTH_DIFFUSE_TEXTURE);
-    let night_texture = asset_server.load(EARTH_NIGHT_TEXTURE);
-    let ocean_mask_texture = asset_server.load(EARTH_OCEAN_MASK_TEXTURE);
-    let specular_texture = asset_server.load(EARTH_SPECULAR_TEXTURE);
-    let displacement_handle = asset_server.load(EARTH_DISPLACEMENT_TEXTURE);
-
-    // create earth entity
-    let _earth = commands
-        .spawn((
-            Grounded,
-            Transform::default(),
-            GlobalTransform::default(),
-        ))
-        .id();
+    // load all textures
+    let _diffuse_texture = asset_server.load(EARTH_DIFFUSE_TEXTURE);
+    let _night_texture = asset_server.load(EARTH_NIGHT_TEXTURE);
+    let _ocean_mask_texture = asset_server.load(EARTH_OCEAN_MASK_TEXTURE);
+    let _specular_texture = asset_server.load(EARTH_SPECULAR_TEXTURE);
+    let _displacement_handle = asset_server.load(EARTH_DISPLACEMENT_TEXTURE);
 
     // create earth material
-    let earth_material = earth_materials.add(EarthMaterial {
-        day_texture: diffuse_texture,
-        night_texture,
-        ocean_mask: ocean_mask_texture,
-        specular_map: specular_texture,
+    let earth_material = earth_material.add(EarthMaterial {
+        day_texture: _diffuse_texture,
+        night_texture: _night_texture,
+        ocean_mask: _ocean_mask_texture,
+        specular_map: _specular_texture,
         sun_uniform: SunUniform {
-            direction: sun_direction,
+            direction: _sun_direction,
             _padding: 0.0,
-        },
+        }
     });
 
     // create atmosphere
-    let mut atmosphere_sphere = Sphere::new(ATMOSPHERE_RADIUS * 1.5).mesh().uv(32, 64);
-    atmosphere_sphere.generate_tangents().unwrap();
+    let mut atmosphere_mesh = Sphere::new(ATMOSPHERE_RADIUS * 1.4).mesh().uv(32, 64);
+    atmosphere_mesh.generate_tangents().unwrap();
 
     commands.spawn((
-        Mesh3d(meshes.add(atmosphere_sphere)),
-        MeshMaterial3d(atmosphere_materials.add(AtmosphereMaterial {
+        Mesh3d(meshes.add(atmosphere_mesh)),
+        MeshMaterial3d(atmosphere_material.add(AtmosphereMaterial {
             atmosphere_uniform: AtmosphereUniform {
-                sun_direction, 
-                camera_position: Vec3::ZERO, // will be updated on runtime
+                sun_direction: _sun_direction,
+                camera_position: Vec3::ZERO, // will be updated
                 rayleigh_coeff: Vec3::from(RAYLEIGH_COEFF),
                 mie_coeff: MIE_COEFF,
                 sun_intensity: SUN_INTENSITY,
@@ -100,92 +87,49 @@ fn start(
         })),
         Transform::from_xyz(0.0, 0.0, 0.0)
             .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
-        Atmosphere,
+        Atmosphere
     ));
-    // .insert(ChildOf(_earth));
 
-    // // create cloud sphere
-    // let mut cloud_sphere = Sphere::new(CLOUD_RADIUS).mesh().uv(32, 64);
-    // cloud_sphere.generate_tangents().unwrap();
+    // create earth
+    let mut placeholder_mesh = Sphere::new(EARTH_RADIUS).mesh().uv(64, 32);
+    placeholder_mesh.generate_tangents().unwrap();
 
-    // // spawn the cloud sphere
-    // commands.spawn((
-    //     Mesh3d(meshes.add(cloud_sphere)),
-    //     MeshMaterial3d(cloud_materials.add(CloudMaterial {
-    //         cloud_texture,
-    //         sun_uniform: SunUniform {
-    //             direction: sun_direction,
-    //             _padding: 0.0,
-    //         },
-    //         cloud_opacity: 0.5, // tweak this for cloud visibility
-    //     })),
-    //     Transform::from_xyz(0.0, 0.0, 0.0)
-    //         .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
-    // ))
-    // .insert(ChildOf(_earth));
-
-    // store data for mesh generation once displacement loads
-    commands.insert_resource(EarthData {
-        displacement_handle,
-        earth_entity: _earth,
-        earth_material,
-    });
+    commands.spawn((
+        Mesh3d(meshes.add(placeholder_mesh)),
+        MeshMaterial3d(earth_material),
+        Transform::from_xyz(0.0, 0.0, 0.0)
+            .with_rotation(Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2)),
+        Earth,
+        Placeholder(_displacement_handle),
+    ));
 }
 
-// generate earth faces once displacement map is loaded
-fn generate_earth_faces(
+// update everything else
+fn update(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     images: Res<Assets<Image>>,
-    earth_data: Res<EarthData>,
+    mut earth_query: Query<(Entity, &mut Mesh3d, &Placeholder), With<Earth>>
 ) {
-    // check if displacement map is loaded
-    let displacement_image = images.get(&earth_data.displacement_handle);
-    
-    if displacement_image.is_none() {
-        return; // wait for image to load
-    }
-
-    // generate earth mesh faces
-    let faces = vec![
-        Vec3::X,        // right
-        Vec3::NEG_X,    // left
-        Vec3::Y,        // top
-        Vec3::NEG_Y,    // bottom
-        Vec3::Z,        // front
-        Vec3::NEG_Z,    // back
-    ];
-
-    let offsets = vec![(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 1.0)];
-
-    for direction in faces {
-        for offset in &offsets {
-            commands.spawn((
-                Mesh3d(meshes.add(
-                    // u can modify displacement resolution here
-                    generate_face(
-                        direction, 
-                        84,
-                        offset.0, 
-                        offset.1,
-                        displacement_image,
-                    ),
-                )),
-                MeshMaterial3d(earth_data.earth_material.clone()),
-            ))
-            .insert(ChildOf(earth_data.earth_entity));
+    for (entity, mut mesh_handle, placeholder) in earth_query.iter_mut() {
+        // check if displacement texture is loaded
+        if let Some(displacement_image) = images.get(&placeholder.0) {
+            let earth_mesh = generate_earth_mesh(16, Some(displacement_image));
+            
+            // replace the mesh
+            mesh_handle.0 = meshes.add(earth_mesh);
+            
+            // remove marker component
+            commands.entity(entity).remove::<Placeholder>();
         }
     }
-
-    // cleanup - we're done with this resource
-    commands.remove_resource::<EarthData>();
 }
 
 // update shaders
 fn update_shaders(
     sun_query: Query<&Transform, (With<Sun>, Changed<Transform>)>,
     camera_query: Query<&Transform, (With<Camera3d>, Without<Sun>)>,
-    earth_query: Query<&MeshMaterial3d<EarthMaterial>, With<Grounded>>,
+    earth_query: Query<&MeshMaterial3d<EarthMaterial>, With<Earth>>,
     atmosphere_query: Query<&MeshMaterial3d<AtmosphereMaterial>, With<Atmosphere>>,
     mut earth_materials: ResMut<Assets<EarthMaterial>>,
     mut atmosphere_materials: ResMut<Assets<AtmosphereMaterial>>,
@@ -221,7 +165,7 @@ fn update_shaders(
 // rotate earth
 fn rotate(
     time: Res<Time>,
-    mut earth_query: Query<&mut Transform, With<Grounded>>
+    mut earth_query: Query<&mut Transform, With<Earth>>
 ) {
     let delta_rotation = Quat::from_rotation_y(EARTH_ROTATION_SPEED * time.delta_secs());
 
