@@ -5,6 +5,8 @@ pub mod config;
 
 // import camera and systems
 mod systems;
+#[cfg(debug_assertions)]
+use bevy::render::settings::{WgpuFeatures, WgpuSettings};
 use systems::camera::CameraPlugin;
 use systems::ui::UIPlugin;
 
@@ -16,7 +18,10 @@ pub struct Sun;
 
 fn main() -> bevy::app::AppExit {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(AssetPlugin {
+            watch_for_changes_override: Some(true),
+            ..default()
+        }))
         // .add_plugins(WireframePlugin::default())
         // .insert_resource(WireframeConfig {
         //     global: true,
