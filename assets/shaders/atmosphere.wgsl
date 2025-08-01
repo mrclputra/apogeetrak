@@ -14,7 +14,7 @@ struct AtmosphereUniform {
 @group(2) @binding(0) var<uniform> atmosphere: AtmosphereUniform;
 
 // ray-marching config
-const SAMPLE_COUNT: i32 = 32;
+const SAMPLE_COUNT: i32 = 64;
 const EARTH_RADIUS: f32 = 6378.0;
 
 // phase functions for scattering
@@ -58,15 +58,19 @@ fn compute_ray_sphere_hit(ray_origin: vec3<f32>, ray_dir: vec3<f32>, center: vec
 
 // simple density function
 fn atmosphere_density(position: vec3<f32>) -> f32 {
-    let altitude = length(position) - EARTH_RADIUS;
-    let scale_height = atmosphere.atmosphere_radius; // FIX MAGIC NUMBER
+    // let altitude = length(position) - EARTH_RADIUS;
+    let altitude = max(0.0, length(position) - EARTH_RADIUS);
+    let max_altitude = atmosphere.atmosphere_radius - EARTH_RADIUS + 100.0;
 
-    if altitude < 0.0 {
+    if altitude < -1.0 || altitude > max_altitude {
         return 0.0;
     }
 
-    // exponential fallof with altitude
-    return exp(-altitude / scale_height);
+    let scale_height = 8000.0; // km, controls exponential dropoff
+    let exp_falloff = exp(-altitude / scale_height);
+    let fade_to_zero = clamp(1.0 - (altitude / max_altitude), 0.0, 1.0);
+
+    return exp_falloff * fade_to_zero;
 }
 
 // calculate how much light get;s abosrbed along a path
@@ -144,7 +148,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     }
 
     // combine scattering effects
-    let final_color = (rayleigh_sum + mie_sum) * atmosphere.sun_intensity * 0.1;
+    let final_color = (rayleigh_sum + mie_sum) * atmosphere.sun_intensity;
     
     // calculate alpha baed on total scattering
     // let alpha = min(1.0, (rayleigh_sum.r + rayleigh_sum.g + rayleigh_sum.b + mie_sum.r) * 0.5);

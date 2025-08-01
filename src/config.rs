@@ -5,8 +5,8 @@ pub const DISPLACEMENT_SCALE: f32 = 100.0; // maximum displacement, in km
 
 // Atmospheric scattering parameters
 // https://physics.stackexchange.com/questions/241190
-pub const RAYLEIGH_COEFF: [f32; 3] = [0.0000055, 0.0000130, 0.0000224]; // RGB wavelengths
-pub const MIE_COEFF: f32 = 0.000012;
+pub const RAYLEIGH_COEFF: [f32; 3] = [0.0000055, 0.000013, 0.0000224]; // RGB wavelengths
+pub const MIE_COEFF: f32 = 0.00012;
 pub const SUN_INTENSITY: f32 = 22.0;
 
 // Atmosphere quality settings

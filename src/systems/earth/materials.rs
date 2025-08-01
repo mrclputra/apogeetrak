@@ -72,6 +72,16 @@ impl Material for AtmosphereMaterial {
     fn alpha_mode(&self) -> AlphaMode {
         AlphaMode::Blend
     }
+    
+    fn specialize(
+            _pipeline: &bevy::pbr::MaterialPipeline<Self>,
+            descriptor: &mut RenderPipelineDescriptor,
+            _layout: &bevy::render::mesh::MeshVertexBufferLayoutRef,
+            _key: bevy::pbr::MaterialPipelineKey<Self>,
+        ) -> Result<(), SpecializedMeshPipelineError> {
+        descriptor.primitive.cull_mode = None;
+        Ok(())
+    }
 }
 
 // // cloud material

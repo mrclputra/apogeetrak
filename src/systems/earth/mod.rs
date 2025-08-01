@@ -82,7 +82,7 @@ fn start(
     });
 
     // create atmosphere
-    let mut atmosphere_sphere = Sphere::new(ATMOSPHERE_RADIUS * 2.0).mesh().uv(32, 64);
+    let mut atmosphere_sphere = Sphere::new(ATMOSPHERE_RADIUS * 1.5).mesh().uv(32, 64);
     atmosphere_sphere.generate_tangents().unwrap();
 
     commands.spawn((
