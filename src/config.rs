@@ -9,6 +9,10 @@ pub const RAYLEIGH_COEFF: [f32; 3] = [0.0000055, 0.0000130, 0.0000224]; // RGB w
 pub const MIE_COEFF: f32 = 0.000012;
 pub const SUN_INTENSITY: f32 = 22.0;
 
+// Atmosphere quality settings
+pub const ATMOSPHERE_SAMPLE_COUNT: i32 = 24; // ray marching steps for atmosphere
+pub const ATMOSPHERE_SOFT_EDGE_START: f32 = 0.8; // where soft edge transition begins (as fraction of atmosphere radius)
+
 // Rotation speeds
 pub const EARTH_ROTATION_SPEED: f32 = 0.01;
 

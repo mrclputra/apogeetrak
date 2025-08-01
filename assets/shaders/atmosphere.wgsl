@@ -14,7 +14,7 @@ struct AtmosphereUniform {
 @group(2) @binding(0) var<uniform> atmosphere: AtmosphereUniform;
 
 // ray-marching config
-const SAMPLE_COUNT: i32 = 16;
+const SAMPLE_COUNT: i32 = 32;
 const EARTH_RADIUS: f32 = 6378.0;
 
 // phase functions for scattering
@@ -59,7 +59,7 @@ fn compute_ray_sphere_hit(ray_origin: vec3<f32>, ray_dir: vec3<f32>, center: vec
 // simple density function
 fn atmosphere_density(position: vec3<f32>) -> f32 {
     let altitude = length(position) - EARTH_RADIUS;
-    let scale_height = 8000.0; // FIX MAGIC NUMBER
+    let scale_height = atmosphere.atmosphere_radius; // FIX MAGIC NUMBER
 
     if altitude < 0.0 {
         return 0.0;
@@ -101,23 +101,16 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let ray_dir = normalize(world_pos - camera_pos);
     let ray_origin = camera_pos;
 
-    // find atmosphere intersect
-    let atmo_distance = compute_ray_sphere_hit(ray_origin, ray_dir, vec3<f32>(0.0), 6500.0);
-    if atmo_distance < 0.0 {
-        return vec4<f32>(0.0, 0.0, 0.0, 0.0);
-    }
-
     // check if ray hits earth
     // for termination since I don't want to deal with layers
-    let eart_distance = compute_ray_sphere_hit(ray_origin, ray_dir, vec3<f32>(0.0), EARTH_RADIUS);
-    let max_distance = select(atmo_distance, eart_distance, eart_distance > 0.0 && eart_distance < atmo_distance);
+    let earth_distance = compute_ray_sphere_hit(ray_origin, ray_dir, vec3<f32>(0.0), EARTH_RADIUS);
 
     // determine how far to march
     // either hit the earth or until atmosphere becomes negligible
-    let max_march_distance = select(atmosphere.atmosphere_radius * 2.0, eart_distance, eart_distance > 0.0);
+    let max_march_distance = select(atmosphere.atmosphere_radius * 10.0, earth_distance, earth_distance > 0.0);
 
     // ray marching
-    let step_size = max_distance / f32(SAMPLE_COUNT);
+    let step_size = max_march_distance / f32(SAMPLE_COUNT);
     let sun_dir = normalize(atmosphere.sun_direction);
 
     var rayleigh_sum = vec3<f32>(0.0);
@@ -131,8 +124,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
 
         // get atmospheric density at this point
         let density = atmosphere_density(sample_pos);
-        if density < 0.001 { continue; } // skip thin atmosphere
-
+        if density < 0.00001 { continue; } // skip thin atmosphere
 
         total_density_encountered += density;
 
