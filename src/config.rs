@@ -14,7 +14,7 @@ pub const ATMOSPHERE_SAMPLE_COUNT: i32 = 24; // ray marching steps for atmospher
 pub const ATMOSPHERE_SOFT_EDGE_START: f32 = 0.8; // where soft edge transition begins (as fraction of atmosphere radius)
 
 // Rotation speeds
-pub const EARTH_ROTATION_SPEED: f32 = 0.01;
+pub const EARTH_ROTATION_SPEED: f32 = 0.07;
 
 // Asset paths
 pub const EARTH_DIFFUSE_TEXTURE: &str = "textures/diffuse.tif";
