@@ -36,7 +36,7 @@ fn calculate_specular(
     let halfway = normalize(light_dir + view_dir);
     
     // calculate shininess from roughness (rough = low shininess, smooth = high shininess)
-    let shininess = mix(512.0, 8.0, roughness);
+    let shininess = mix(512.0, 1.0, roughness);
     
     // calculate specular component
     let spec = pow(max(dot(world_normal, halfway), 0.0), shininess);

@@ -141,7 +141,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         let mie_scatter = vec3<f32>(atmosphere.mie_coeff) * density * mie_phase(cos_theta, g);
 
         // calculate how much sunlight reaches this point
-        let sun_attenuation = max(0.1, dot(normalize(sample_pos), sun_dir)); // need fix?
+        let sun_attenuation = clamp(dot(normalize(sample_pos), sun_dir), 0.005, 1.0);
 
         rayleigh_sum += rayleigh_scatter * sun_attenuation * step_size;
         mie_sum += mie_scatter * sun_attenuation * step_size;

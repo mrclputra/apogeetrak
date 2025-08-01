@@ -97,7 +97,7 @@ pub fn generate_face(
 
     // after generating vertices, recalculate normals
     // this is to make sure the normals account for the displacement
-    recalculate_normals(&mut normals, &vertices, &indices);
+    // recalculate_normals(&mut normals, &vertices, &indices);
 
     // the problem with recalculating normals is that it messes up the day/night shader
     // i.e. cities on mountain sides becomes bright earlier/later than they should
@@ -136,7 +136,6 @@ fn cube_point_to_sphere_point(p: Vec3) -> Vec3 {
 }
 
 /// Recalculate normals based on actual mesh geometry
-/// TODO: review implementation, does it fuck with the UV maps?
 fn recalculate_normals(normals: &mut Vec<Vec3>, vertices: &[Vec3], indices: &[u32]) {
     // reset normals
     normals.fill(Vec3::ZERO);
