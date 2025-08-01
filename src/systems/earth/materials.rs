@@ -84,24 +84,24 @@ impl Material for AtmosphereMaterial {
     }
 }
 
-// // cloud material
-// #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
-// pub struct CloudMaterial {
-//     #[texture(0)]
-//     #[sampler(1)]
-//     pub cloud_texture: Handle<Image>,
-//     #[uniform(2)]
-//     pub sun_uniform: SunUniform,
-//     #[uniform(3)]
-//     pub cloud_opacity: f32, // runtime adjustments
-// }
+// cloud material
+#[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
+pub struct CloudMaterial {
+    #[texture(0)]
+    #[sampler(1)]
+    pub cloud_texture: Handle<Image>,
+    #[uniform(2)]
+    pub sun_uniform: SunUniform,
+    #[uniform(3)]
+    pub cloud_opacity: f32, // runtime adjustments
+}
 
-// impl Material for CloudMaterial {
-//     fn fragment_shader() -> ShaderRef {
-//         "shaders/clouds.wgsl".into()
-//     }
+impl Material for CloudMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/clouds.wgsl".into()
+    }
 
-//     fn alpha_mode(&self) -> AlphaMode {
-//         AlphaMode::Blend // transparency support
-//     }
-// }
+    fn alpha_mode(&self) -> AlphaMode {
+        AlphaMode::Blend // transparency support
+    }
+}
