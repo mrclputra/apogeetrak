@@ -162,9 +162,10 @@ fn generate_earth_faces(
         for offset in &offsets {
             commands.spawn((
                 Mesh3d(meshes.add(
+                    // u can modify displacement resolution here
                     generate_face(
                         direction, 
-                        64,
+                        84,
                         offset.0, 
                         offset.1,
                         displacement_image,

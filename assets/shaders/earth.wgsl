@@ -61,9 +61,9 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let view_dir = normalize(-in.world_position.xyz);
     
     // diffuse lighting calculation
-    let sun_factor = max(0.0, dot(world_normal, light_dir) + 0.0);
+    let sun_factor = max(0.0, dot(world_normal, light_dir) + 0.2);
     
-    // smooth transition between day and night
+    // transition between day and night
     let day_night_blend = smoothstep(0.0, 0.32, sun_factor);
     
     // mix textures based on sun exposure
@@ -87,8 +87,8 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         specular_strength
     );
     
-    // add specular highlights (only on day side, with slight warm tint)
-    let specular_color = vec3<f32>(1.0, 1.0, 0.95); // slightly warm white
+    // add specular highlights
+    let specular_color = vec3<f32>(1.0, 1.0, 0.95);
     final_color += specular_contribution * day_night_blend * specular_color;
 
     return vec4<f32>(final_color, 1.0);
