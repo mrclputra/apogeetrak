@@ -11,6 +11,7 @@ use normal::generate_normal_map;
 use crate::{config::{
     ATMOSPHERE_RADIUS, CLOUD_RADIUS, EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, EARTH_DISPLACEMENT_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_OCEAN_MASK_TEXTURE, EARTH_ROTATION_SPEED, EARTH_SPECULAR_TEXTURE, MIE_COEFF, RAYLEIGH_COEFF, SUN_INTENSITY
 }, systems::earth::normal::save_image_as_png, Sun};
+use crate::systems::ui::TimeState;
 
 pub struct EarthPlugin;
 
@@ -263,13 +264,18 @@ fn update_shaders(
 
 // rotate earth and clouds
 fn rotate(
-    time: Res<Time>,
+    time_state: Res<TimeState>,
     mut earth_query: Query<&mut Transform, With<Earth>>,
 ) {
-    let delta_rotation = Quat::from_rotation_y(EARTH_ROTATION_SPEED * time.delta_secs());
+    if !time_state.is_paused {
+        let rotation_speed = EARTH_ROTATION_SPEED * time_state.speed_mult as f32;
 
-    // rotate earth
-    if let Ok(mut transform) = earth_query.single_mut() {
-        transform.rotation = transform.rotation * delta_rotation;
+        // keep rotation smooth
+        let delta_rotation = Quat::from_rotation_y(rotation_speed * (1.0 / 60.0)); // 60fps equiv
+
+        // rotate earth
+        if let Ok(mut transform) = earth_query.single_mut() {
+            transform.rotation = transform.rotation * delta_rotation;
+        }
     }
 }

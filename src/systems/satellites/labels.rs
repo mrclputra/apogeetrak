@@ -5,6 +5,7 @@ use bevy::render::camera::Camera;
 use bevy::window::Window;
 
 use crate::systems::satellites::Satellite;
+use crate::systems::ui::TimeState;
 use crate::config::EARTH_RADIUS;
 
 // full ui screen container component
@@ -40,6 +41,7 @@ pub fn update_labels(
     mut labels: Query<(Entity, &mut Node, &mut Visibility, &SatelliteLabel)>,
     container: Query<Entity, With<LabelContainer>>,
     window: Query<&Window>,
+    time_state: Res<TimeState>, // use simulation time
 ) {
     let (Ok(window), Ok((camera, cam_transform)), Ok(container)) = 
         (window.single(), camera.single(), container.single()) else { return; };
@@ -74,10 +76,11 @@ pub fn update_labels(
         } else if should_show {
             // create new label
             let pos = screen_pos.unwrap(); // known Some
+            let (_, _, altitude) = satellite.geodetic_position_at_time(time_state.sim_time);
+            
             let label_text = format!("{}\nAlt: {:.0}km", 
                 satellite.name(), 
-                satellite.current_geodetic_position().2, // altitude
-                // sat_pos.length() - EARTH_RADIUS
+                altitude
             );
 
             commands.entity(container).with_children(|parent| {
@@ -124,7 +127,7 @@ fn world_to_screen(
     // NDC to screen coordinates
     Some(Vec2::new(
         (ndc.x + 1.0) * 0.5 * screen_width,
-        (1.0 - ndc.y) * 0.5 * screen_height, // Y is flipped
+        (1.0 - ndc.y) * 0.5 * screen_height, // Y is flipped in screen space
     ))
 }
 

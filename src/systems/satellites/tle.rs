@@ -1,3 +1,5 @@
+// Updated Satellite implementation in src/systems/satellites/tle.rs
+
 use bevy::prelude::*;
 
 use chrono::{Utc, DateTime, Datelike};
@@ -20,7 +22,7 @@ pub struct Satellite {
 }
 
 impl Satellite {
-    // note: TLS is always 3 lines
+    // note: TLE is always 3 lines
     pub fn parse(name: &str, line1: &str, line2: &str) -> Option<Self> {
         if line1.len() < 69 || line2.len() < 69 {
             return None;
@@ -79,7 +81,6 @@ impl Satellite {
                 position: [0.0, 0.0, 0.0],
                 velocity: [0.0, 0.0, 0.0],
             })
-        // self.constants.propagate(sgp4::MinutesSinceEpoch(tsince)).ok()
     }
 
     fn minutes_since_epoch(&self, target_time: DateTime<Utc>) -> Option<f64> {
@@ -91,9 +92,9 @@ impl Satellite {
         }
     }
 
-    // calculate orbital trajectory
-    // returns a traversable array of points on oorbital path
-    pub fn generate_orbit_path(&self, resolution: usize) -> Vec<Vec3> {
+    // calculate orbital trajectory at a specific time
+    // returns a traversable array of points on orbital path
+    pub fn generate_orbit_path(&self, resolution: usize, base_time: DateTime<Utc>) -> Vec<Vec3> {
         let mut path_points = Vec::with_capacity(resolution); // optimization
 
         let orbital_period = if self.elements.mean_motion > 0.0 {
@@ -102,13 +103,12 @@ impl Satellite {
             90.0 // fallback
         };
 
-        let start_time = self.elements.datetime.and_utc();
-
         // generate points along the orbit
+        // start from base time
         for i in 0..resolution {
             let time_offset_minutes = (i as f64 / resolution as f64) * orbital_period;
             let offset_duration = chrono::Duration::seconds((time_offset_minutes * 60.0) as i64);
-            let target_time = start_time + offset_duration;
+            let target_time = base_time + offset_duration;
 
             let prediction = self.calculate(target_time);
             let pos = sgp4_to_cartesian(&prediction);
@@ -120,15 +120,15 @@ impl Satellite {
 
     // HELPERS
 
-    // get current position (x, y ,z)
-    pub fn current_position(&self) -> Vec3 {
-        let prediction = self.calculate(Utc::now());
+    // get position at specific time (x, y, z)
+    pub fn position_at_time(&self, time: DateTime<Utc>) -> Vec3 {
+        let prediction = self.calculate(time);
         sgp4_to_cartesian(&prediction)
     }
 
-    // get current geodetic position (lat, lon, alt)
-    pub fn current_geodetic_position(&self) -> (f64, f64, f64) {
-        let prediction = self.calculate(Utc::now());
+    // get geodetic position at specific time (lat, lon, alt)
+    pub fn geodetic_position_at_time(&self, time: DateTime<Utc>) -> (f64, f64, f64) {
+        let prediction = self.calculate(time);
         cartesian_to_geodetic(
             prediction.position[0],
             prediction.position[1], 
@@ -136,10 +136,10 @@ impl Satellite {
         )
     }
 
-    // get current velocity (vX, vY, vZ)
+    // get velocity at specific time (vX, vY, vZ)
     #[allow(dead_code)]
-    pub fn current_velocity(&self) -> (f64, f64, f64) {
-        let prediction = self.calculate(Utc::now());
+    pub fn velocity_at_time(&self, time: DateTime<Utc>) -> (f64, f64, f64) {
+        let prediction = self.calculate(time);
         (
             prediction.velocity[0],
             prediction.velocity[1],
@@ -147,9 +147,23 @@ impl Satellite {
         )
     }
 
+    // convenience methods that use current time (for backwards compatibility)
+    // pub fn current_position(&self) -> Vec3 {
+    //     self.position_at_time(Utc::now())
+    // }
+
+    // pub fn current_geodetic_position(&self) -> (f64, f64, f64) {
+    //     self.geodetic_position_at_time(Utc::now())
+    // }
+
+    // #[allow(dead_code)]
+    // pub fn current_velocity(&self) -> (f64, f64, f64) {
+    //     self.velocity_at_time(Utc::now())
+    // }
+
     // just prints contents
     #[allow(dead_code)]
-    pub fn print(&self) {
+    pub fn print_at_time(&self, time: DateTime<Utc>) {
         println!("  Name        : {}", self.name());
         println!("  NORAD ID    : {}", self.norad_id());
         println!("  Intl ID     : {}", self.intl_id());
@@ -158,21 +172,21 @@ impl Satellite {
         println!("  Epoch       : Year {} Day {:.2}", self.epoch_datetime().year(), self.epoch_datetime().day());
         println!();
 
-        // print current ECI position
-        let pos = self.current_position();
+        // print ECI position at time
+        let pos = self.position_at_time(time);
         println!(
             "  ECI         : {:.2} km, {:.2} km, {:.2} km", pos.x, pos.y, pos.z
         );
 
-        // print current geodetic position
-        let (lat, lon, alt) = self.current_geodetic_position();
+        // print geodetic position at time
+        let (lat, lon, alt) = self.geodetic_position_at_time(time);
         println!(
             "  Geo         : {:.4}°, {:.4}° at {:.1} km",
             lat, lon, alt
         );
 
-        // print current velocity
-        let (vx, vy, vz) = self.current_velocity();
+        // print velocity at time
+        let (vx, vy, vz) = self.velocity_at_time(time);
         let speed = (vx.powi(2) + vy.powi(2) + vz.powi(2)).sqrt();
         println!(
             "  Velocity    : {:.2} km/s", speed
@@ -180,6 +194,12 @@ impl Satellite {
 
         println!();
     }
+
+    // // convenience method using current time
+    // #[allow(dead_code)]
+    // pub fn print(&self) {
+    //     self.print_at_time(Utc::now());
+    // }
 }
 
 // UTILS

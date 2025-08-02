@@ -46,9 +46,6 @@ pub struct DateTimeDisplay;
 
 // time control button components
 #[derive(Component)]
-pub struct PlayPauseButton;
-
-#[derive(Component)]
 pub struct ResetButton;
 
 #[derive(Component)]
@@ -57,7 +54,7 @@ pub struct BackwardButton;
 #[derive(Component)]
 pub struct ForwardButton;
 
-fn start(
+pub fn start(
     mut commands: Commands,
     asset_server: Res<AssetServer>
 ) {
@@ -170,33 +167,6 @@ fn start(
                             ));
                         });
 
-                    // play/pause button
-                    buttons_parent
-                        .spawn((
-                            Button,
-                            Node {
-                                width: Val::Px(32.0),
-                                height: Val::Px(32.0),
-                                margin: UiRect::right(Val::Px(5.0)),
-                                justify_content: JustifyContent::Center,
-                                align_items: AlignItems::Center,
-                                ..default()
-                            },
-                            BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
-                            BorderRadius::all(Val::Px(4.0)),
-                            PlayPauseButton,
-                        ))
-                        .with_children(|btn| {
-                            btn.spawn((
-                                ImageNode::new(asset_server.load("textures/icons/play.png")), // Start with play icon
-                                Node {
-                                    width: Val::Px(24.0),
-                                    height: Val::Px(24.0),
-                                    ..default()
-                                },
-                            ));
-                        });
-
                     // forward button
                     buttons_parent
                         .spawn((
@@ -234,30 +204,30 @@ fn handle_time_control(
     >,
     backward_query: Query<&Interaction, (With<BackwardButton>, Changed<Interaction>)>,
     reset_query: Query<&Interaction, (With<ResetButton>, Changed<Interaction>)>,
-    play_pause_query: Query<&Interaction, (With<PlayPauseButton>, Changed<Interaction>)>,
     forward_query: Query<&Interaction, (With<ForwardButton>, Changed<Interaction>)>,
-    mut play_pause_image_query: Query<&mut ImageNode, With<PlayPauseButton>>,
-    asset_server: Res<AssetServer>,
 ) {
     // visual feedback
     for (interaction, mut color) in &mut interaction_query {
-        match *interaction {
-            Interaction::Pressed => {
-                *color = Color::srgba(0.4, 0.4, 0.4, 0.8).into();
-            }
-            Interaction::Hovered => {
-                *color = Color::srgba(0.3, 0.3, 0.3, 0.8).into();
-            }
-            Interaction::None => {
-                *color = Color::srgba(0.2, 0.2, 0.2, 0.8).into();
-            }
+        *color = match *interaction {
+            Interaction::Pressed => Color::srgba(0.4, 0.4, 0.4, 0.8),
+            Interaction::Hovered => Color::srgba(0.3, 0.3, 0.3, 0.8),
+            Interaction::None => Color::srgba(0.2, 0.2, 0.2, 0.8),
         }
+        .into();
     }
 
     // handle backward button
     if let Ok(interaction) = backward_query.single() {
         if *interaction == Interaction::Pressed {
-            time_state.speed_mult = -2.0; // 2x backward
+            time_state.is_paused = false;
+
+            time_state.speed_mult = if time_state.speed_mult > 1.0 {
+                time_state.speed_mult / 2.0
+            } else if time_state.speed_mult == 1.0 {
+                -1.0
+            } else {
+                (time_state.speed_mult * 2.0).clamp(-4096.0, -1.0)
+            };
         }
     }
 
@@ -269,26 +239,18 @@ fn handle_time_control(
         }
     }
 
-    // handle play/pause button
-    if let Ok(interaction) = play_pause_query.single() {
-        if *interaction == Interaction::Pressed {
-            time_state.is_paused = !time_state.is_paused;
-            
-            // update play/pause icon
-            if let Ok(mut image) = play_pause_image_query.single_mut() {
-                if time_state.is_paused {
-                    image.image = asset_server.load("textures/icons/play.png");
-                } else {
-                    image.image = asset_server.load("textures/icons/pause.png");
-                }
-            }
-        }
-    }
-
     // handle forward button
     if let Ok(interaction) = forward_query.single() {
         if *interaction == Interaction::Pressed {
-            time_state.speed_mult = 2.0; // 2x forward
+            time_state.is_paused = false;
+
+            time_state.speed_mult = if time_state.speed_mult < -1.0 {
+                (time_state.speed_mult / 2.0).clamp(1.0, -1.0)
+            } else if time_state.speed_mult == -1.0 {
+                1.0
+            } else {
+                (time_state.speed_mult * 2.0).clamp(1.0, 4096.0) // change max time speed here
+            };
         }
     }
 }
@@ -308,6 +270,7 @@ fn update_satellite_count(
 // update the datetime display with current UTC time
 fn update_datetime(
     mut text_query: Query<&mut Text, With<DateTimeDisplay>>,
+    time_state: ResMut<TimeState>,
 ) {
     if let Ok(mut text) = text_query.single_mut() {
         // Create a fixed datetime (e.g., 2025-01-01 12:00:00 UTC)
@@ -316,6 +279,11 @@ fn update_datetime(
             .with_timezone(&Utc);
         
         // format
-        text.0 = format!("Time: {} UTC", fixed_datetime.format("%Y-%m-%d %H:%M:%S"));
+        // text.0 = format!("Time: {} UTC", fixed_datetime.format("%Y-%m-%d %H:%M:%S"));
+        text.0 = format!(
+            "Time: {} UTC x{:.1}",
+            fixed_datetime.format("%Y-%m-%d %H:%M:%S"),
+            time_state.speed_mult,
+        );
     }
 }

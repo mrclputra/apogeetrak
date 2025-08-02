@@ -5,6 +5,7 @@ pub mod labels;
 
 pub use tle::{Satellite, fetch_satellites};
 use labels::setup_labels;
+use crate::systems::ui::TimeState; // add this import
 
 // main satellite plugin
 // combined TLE and labeling functionality
@@ -13,13 +14,19 @@ pub struct SatellitePlugin;
 impl Plugin for SatellitePlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_systems(Startup, (setup_satellites, setup_labels))
-            .add_systems(Update, labels::update_labels);
+            .add_systems(Startup, (
+                setup_labels,
+                setup_satellites.after(crate::systems::ui::start),
+            ));
+            // .add_systems(Update, (
+            //     update_positions,
+            //     labels::update_labels
+            // ));
     }
 }
 
 // create line mesh loop from a series of points (wraps)
-// my 'trail renderer
+// my 'trail renderer'
 fn create_trail_mesh(points: &[Vec3]) -> Mesh {
     let mut positions = Vec::new();
     let mut indices = Vec::new();
@@ -53,6 +60,7 @@ fn render_orbits(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
+    sim_time: chrono::DateTime<chrono::Utc>,
 ) {
     // create orbit material, reusable
     let orbit_material = materials.add(StandardMaterial {
@@ -65,7 +73,7 @@ fn render_orbits(
     // render orbit, all satellites
     for satellite in satellites {
         // define orbit mesh resolution here (number of vertices)
-        let orbit_points = satellite.generate_orbit_path(256);
+        let orbit_points = satellite.generate_orbit_path(256, sim_time);
 
         if !orbit_points.is_empty() {
             let orbit_mesh = create_trail_mesh(&orbit_points);
@@ -79,11 +87,23 @@ fn render_orbits(
     }
 }
 
-// called on startup
+// update satellite positions
+fn update_positions(
+    time_state: Res<TimeState>,
+    mut satellite_query: Query<(&Satellite, &mut Transform)>,
+) {
+    for (satellite, mut transform) in satellite_query.iter_mut() {
+        let new_position = satellite.position_at_time(time_state.sim_time);
+        transform.translation = new_position;
+    }
+}
+
+// called on startup, to setup satellite objects initially
 fn setup_satellites(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    time_state: Res<TimeState>,
 ) {
     // fetch TLE data from Celestrak fileserver
     // QA: should this be adapted for APIs?
@@ -107,10 +127,10 @@ fn setup_satellites(
                 ..default()
             });
 
-            // spawn satellites
+            // spawn satellites at initial positions
             for satellite in &satellites {
-                // spawn satellite in 3D
-                let position = satellite.current_position();
+                // spawn satellites at initial time
+                let position = satellite.position_at_time(time_state.sim_time);
                 commands.spawn((
                     Mesh3d(meshes.add(Sphere::new(50.0).mesh().ico(8).unwrap())),
                     MeshMaterial3d(satellite_material.clone()),
@@ -126,21 +146,21 @@ fn setup_satellites(
                 // println!("  Epoch       : Year {} Day {:.2}", satellite.epoch_datetime().year(), satellite.epoch_datetime().day());
                 // println!();
 
-                // // print current ECI position
-                // let pos = satellite.current_position();
+                // // print ECI position at sim time
+                // let pos = satellite.position_at_time(time_state.sim_time);
                 // println!(
                 //     "  ECI         : {:.2} km, {:.2} km, {:.2} km", pos.x, pos.y, pos.z
                 // );
 
-                // // print current geodetic position
-                // let (lat, lon, alt) = satellite.current_geodetic_position();
+                // // print geodetic position at sim time
+                // let (lat, lon, alt) = satellite.geodetic_position_at_time(time_state.sim_time);
                 // println!(
                 //     "  Geo         : {:.4}°, {:.4}° at {:.1} km",
                 //     lat, lon, alt
                 // );
 
-                // // print current velocity
-                // let (vx, vy, vz) = satellite.current_velocity();
+                // // print velocity at sim time
+                // let (vx, vy, vz) = satellite.velocity_at_time(time_state.sim_time);
                 // let speed = (vx.powi(2) + vy.powi(2) + vz.powi(2)).sqrt();
                 // println!(
                 //     "  Velocity    : {:.2} km/s", speed
@@ -149,7 +169,7 @@ fn setup_satellites(
                 // println!();
             }
 
-            render_orbits(&satellites, &mut commands, &mut meshes, &mut materials);
+            render_orbits(&satellites, &mut commands, &mut meshes, &mut materials, time_state.sim_time);
         }
         Ok(Err(e)) => {
             error!("Failed to fetch TLE data: {}", e);
