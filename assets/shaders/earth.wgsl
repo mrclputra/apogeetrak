@@ -117,8 +117,9 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     // diffuse lighting calculation using normal-mapped surface
     let sun_factor = max(0.0, dot(world_normal, light_dir) + 0.0);
     
-    // add some fake lighting to prevent completely flat appearance when sun is overhead
-    let fake_lighting = pow(dot(world_normal, point_on_sphere), 10.0);
+    // add some fake lighting
+    // prevent flat when sun is overhead
+    let fake_lighting = pow(dot(world_normal, point_on_sphere), 4.0);
     
     // transition between day and night
     let base_blend = 0.003;
@@ -134,7 +135,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         
         // calculate ocean specular
         let ocean_roughness = 0.1; // oceans are smoother
-        let ocean_specular_strength = specular_value * 200.0; // should give stronger specular for water
+        let ocean_specular_strength = specular_value * 200.0; // should give stronger specular
         
         let ocean_specular = calculate_specular(
             world_normal,
