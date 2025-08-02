@@ -7,8 +7,32 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_ui)
-           .add_systems(Update, (update_satellite_count, update_datetime));
+        app.add_systems(Startup, start)
+           .add_systems(Update, (
+                update_satellite_count, 
+                update_datetime, 
+                handle_time_control,
+            ));
+    }
+}
+
+// time control state resource
+#[derive(Resource)]
+pub struct TimeState {
+    pub is_paused: bool,
+    pub speed_mult: f64,
+    pub sim_time: chrono::DateTime<Utc>,
+}
+
+impl Default for TimeState {
+    fn default() -> Self {
+        Self {
+            is_paused: false,
+            speed_mult: 1.0,
+            sim_time: chrono::DateTime::parse_from_rfc3339("2000-01-01T12:00:00Z")
+                .unwrap()
+                .with_timezone(&Utc),
+        }
     }
 }
 
@@ -20,7 +44,26 @@ pub struct SatelliteCounter;
 #[derive(Component)]
 pub struct DateTimeDisplay;
 
-fn setup_ui(mut commands: Commands) {
+// time control button components
+#[derive(Component)]
+pub struct PlayPauseButton;
+
+#[derive(Component)]
+pub struct ResetButton;
+
+#[derive(Component)]
+pub struct BackwardButton;
+
+#[derive(Component)]
+pub struct ForwardButton;
+
+fn start(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>
+) {
+    // initialize time state
+    commands.insert_resource(TimeState::default());
+
     // create UI container
     commands
         .spawn((
@@ -61,7 +104,193 @@ fn setup_ui(mut commands: Commands) {
                     ..default()
                 },
             ));
+
+            // time control buttons container
+            parent.spawn((
+                Node {
+                    flex_direction: FlexDirection::Row,
+                    align_items: AlignItems::Center,
+                    margin: UiRect::top(Val::Px(10.0)),
+                    ..default()
+                },
+                BackgroundColor(Color::NONE),
+            ))
+            .with_children(|buttons_parent| {
+                // backward button
+                    buttons_parent
+                        .spawn((
+                            Button,
+                            Node {
+                                width: Val::Px(32.0),
+                                height: Val::Px(32.0),
+                                margin: UiRect::right(Val::Px(5.0)),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
+                            BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
+                            BorderRadius::all(Val::Px(4.0)),
+                            BackwardButton,
+                        ))
+                        .with_children(|btn| {
+                            btn.spawn((
+                                ImageNode::new(asset_server.load("textures/icons/backward.png")),
+                                Node {
+                                    width: Val::Px(24.0),
+                                    height: Val::Px(24.0),
+                                    ..default()
+                                },
+                            ));
+                        });
+
+                    // reset button
+                    buttons_parent
+                        .spawn((
+                            Button,
+                            Node {
+                                width: Val::Px(32.0),
+                                height: Val::Px(32.0),
+                                margin: UiRect::right(Val::Px(5.0)),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
+                            BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
+                            BorderRadius::all(Val::Px(4.0)),
+                            ResetButton,
+                        ))
+                        .with_children(|btn| {
+                            btn.spawn((
+                                ImageNode::new(asset_server.load("textures/icons/reset.png")),
+                                Node {
+                                    width: Val::Px(24.0),
+                                    height: Val::Px(24.0),
+                                    ..default()
+                                },
+                            ));
+                        });
+
+                    // play/pause button
+                    buttons_parent
+                        .spawn((
+                            Button,
+                            Node {
+                                width: Val::Px(32.0),
+                                height: Val::Px(32.0),
+                                margin: UiRect::right(Val::Px(5.0)),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
+                            BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
+                            BorderRadius::all(Val::Px(4.0)),
+                            PlayPauseButton,
+                        ))
+                        .with_children(|btn| {
+                            btn.spawn((
+                                ImageNode::new(asset_server.load("textures/icons/play.png")), // Start with play icon
+                                Node {
+                                    width: Val::Px(24.0),
+                                    height: Val::Px(24.0),
+                                    ..default()
+                                },
+                            ));
+                        });
+
+                    // forward button
+                    buttons_parent
+                        .spawn((
+                            Button,
+                            Node {
+                                width: Val::Px(32.0),
+                                height: Val::Px(32.0),
+                                justify_content: JustifyContent::Center,
+                                align_items: AlignItems::Center,
+                                ..default()
+                            },
+                            BackgroundColor(Color::srgba(0.1, 0.1, 0.1, 0.8)),
+                            BorderRadius::all(Val::Px(4.0)),
+                            ForwardButton,
+                        ))
+                        .with_children(|btn| {
+                            btn.spawn((
+                                ImageNode::new(asset_server.load("textures/icons/forward.png")),
+                                Node {
+                                    width: Val::Px(24.0),
+                                    height: Val::Px(24.0),
+                                    ..default()
+                                },
+                            ));
+                        });
+            });
         });
+}
+
+fn handle_time_control(
+    mut time_state: ResMut<TimeState>,
+    mut interaction_query: Query<
+        (&Interaction, &mut BackgroundColor),
+        (Changed<Interaction>, With<Button>),
+    >,
+    backward_query: Query<&Interaction, (With<BackwardButton>, Changed<Interaction>)>,
+    reset_query: Query<&Interaction, (With<ResetButton>, Changed<Interaction>)>,
+    play_pause_query: Query<&Interaction, (With<PlayPauseButton>, Changed<Interaction>)>,
+    forward_query: Query<&Interaction, (With<ForwardButton>, Changed<Interaction>)>,
+    mut play_pause_image_query: Query<&mut ImageNode, With<PlayPauseButton>>,
+    asset_server: Res<AssetServer>,
+) {
+    // visual feedback
+    for (interaction, mut color) in &mut interaction_query {
+        match *interaction {
+            Interaction::Pressed => {
+                *color = Color::srgba(0.4, 0.4, 0.4, 0.8).into();
+            }
+            Interaction::Hovered => {
+                *color = Color::srgba(0.3, 0.3, 0.3, 0.8).into();
+            }
+            Interaction::None => {
+                *color = Color::srgba(0.2, 0.2, 0.2, 0.8).into();
+            }
+        }
+    }
+
+    // handle backward button
+    if let Ok(interaction) = backward_query.single() {
+        if *interaction == Interaction::Pressed {
+            time_state.speed_mult = -2.0; // 2x backward
+        }
+    }
+
+    // handle reset button
+    if let Ok(interaction) = reset_query.single() {
+        if *interaction == Interaction::Pressed {
+            time_state.speed_mult = 1.0;
+            time_state.is_paused = false;
+        }
+    }
+
+    // handle play/pause button
+    if let Ok(interaction) = play_pause_query.single() {
+        if *interaction == Interaction::Pressed {
+            time_state.is_paused = !time_state.is_paused;
+            
+            // update play/pause icon
+            if let Ok(mut image) = play_pause_image_query.single_mut() {
+                if time_state.is_paused {
+                    image.image = asset_server.load("textures/icons/play.png");
+                } else {
+                    image.image = asset_server.load("textures/icons/pause.png");
+                }
+            }
+        }
+    }
+
+    // handle forward button
+    if let Ok(interaction) = forward_query.single() {
+        if *interaction == Interaction::Pressed {
+            time_state.speed_mult = 2.0; // 2x forward
+        }
+    }
 }
 
 // update the satellite count display

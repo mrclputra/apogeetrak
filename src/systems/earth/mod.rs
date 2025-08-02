@@ -73,7 +73,7 @@ fn start(
         .id();
 
     // create atmosphere
-    let mut atmosphere_sphere = Sphere::new(ATMOSPHERE_RADIUS * 1.5).mesh().uv(32, 64);
+    let mut atmosphere_sphere = Sphere::new(ATMOSPHERE_RADIUS * 1.2).mesh().uv(16, 16);
     atmosphere_sphere.generate_tangents().unwrap();
 
     commands.spawn((
@@ -110,7 +110,7 @@ fn start(
             cloud_opacity: 0.3,
         })),
         Transform::from_xyz(0.0, 0.0, 0.0)
-            .with_rotation(Quat::from_rotation_y(-std::f32::consts::FRAC_PI_2)),
+            .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
         Clouds,
     ))
     .insert(ChildOf(earth_entity));
