@@ -130,7 +130,7 @@ fn start(
 
             // generate orbit paths
             for satellite in &mut satellites {
-                satellite.generate_orbit_path(256, time_state.sim_time);
+                satellite.generate_orbit_path(128, time_state.sim_time);
                 
                 // debug: print orbit info
                 info!("Generated orbit for {}: {:.1} minutes, {} points", 

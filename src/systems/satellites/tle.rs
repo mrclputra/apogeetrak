@@ -113,30 +113,21 @@ impl Satellite {
             return Vec3::ZERO;
         }
 
-        // single point case
         if self.orbit_path.len() == 1 {
             return self.orbit_path[0].position;
         }
 
-        let base_time = self.orbit_path[0].time;
-        let elapsed_minutes = (target_time - base_time).num_minutes() as f64;
-
-        let cycle_time = elapsed_minutes % self.orbit_duration_m;
-
+        let elapsed_minutes = (target_time - self.orbit_path[0].time).num_seconds() as f64 / 60.0;
+        let cycle_time = elapsed_minutes.rem_euclid(self.orbit_duration_m); // correct modulo for negative times
         let time_per_segment = self.orbit_duration_m / (self.orbit_path.len() - 1) as f64;
-        let segment_index = (cycle_time / time_per_segment).floor() as usize;
+        let segment_index = ((cycle_time / time_per_segment).floor() as usize)
+            .min(self.orbit_path.len() - 2);
 
-        // edge case, where point is at end of orbit
-        let segment_index = segment_index.min(self.orbit_path.len() - 2);
+        let t = ((cycle_time % time_per_segment) / time_per_segment).clamp(0.0, 1.0);
 
-        // interpolate between two points
-        let point_a = &self.orbit_path[segment_index];
-        let point_b = &self.orbit_path[segment_index + 1];
-
-        let segment_start_time = segment_index as f64 * time_per_segment;
-        let t = ((cycle_time - segment_start_time) / time_per_segment).clamp(0.0, 1.0);
-        
-        point_a.position.lerp(point_b.position, t as f32)
+        self.orbit_path[segment_index]
+            .position
+            .lerp(self.orbit_path[segment_index + 1].position, t as f32)
     }
 
     // get geodetic position at specific time (lat, lon, alt)
@@ -189,7 +180,7 @@ pub fn sgp4_to_cartesian(prediction: &Prediction) -> Vec3 {
 // fetch satellite data
 // async
 pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
-    let path = Path::new("assets/data/gnss.txt");
+    let path = Path::new("assets/data/brightest.txt");
     let tle_data = match fs::read_to_string(path) {
         Ok(contents) => {
             println!("Loaded TLE data from local file: {:?}", path);

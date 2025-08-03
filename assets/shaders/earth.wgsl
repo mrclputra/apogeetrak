@@ -33,7 +33,7 @@ fn calculate_sphere_tangent_space(world_pos: vec3<f32>, uv: vec2<f32>) -> mat3x3
     // normalize position to get point on unit sphere
     let point_on_sphere = normalize(world_pos);
 
-    let longitude = uv.x * 2.0 * PI;
+    let longitude = (uv.x * 2.0 - 1.0) * PI;
     let latitude = (0.5 - uv.y) * PI;
 
     // calculate tangent
@@ -119,11 +119,11 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     
     // add some fake lighting
     // prevent flat when sun is overhead
-    let fake_lighting = pow(dot(world_normal, point_on_sphere), 4.0);
+    let fake_lighting = pow(dot(world_normal, point_on_sphere), 3.0);
     
     // transition between day and night
-    let base_blend = 0.003;
-    let day_night_blend = base_blend + (1.0 - base_blend) * smoothstep(0.0, 0.42, sun_factor);
+    let base_blend = 0.0015;
+    let day_night_blend = base_blend + (1.0 - base_blend) * smoothstep(0.0, 0.7, sun_factor);
     
     // mix textures based on sun exposure
     var final_color = mix(night_color.rgb, day_color.rgb, day_night_blend);

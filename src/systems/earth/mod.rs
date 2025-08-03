@@ -252,7 +252,7 @@ fn try_load_saved_normal_map(asset_server: &AssetServer) -> Option<Handle<Image>
 
 // update shaders
 fn update_shaders(
-    sun_query: Query<&Transform, (With<Sun>, Changed<Transform>)>,
+    sun_query: Query<&Transform, With<Sun>>,
     camera_query: Query<&Transform, (With<Camera3d>, Without<Sun>)>,
     earth_query: Query<&MeshMaterial3d<EarthMaterial>, With<Earth>>,
     atmosphere_query: Query<&MeshMaterial3d<AtmosphereMaterial>, With<Atmosphere>>,
