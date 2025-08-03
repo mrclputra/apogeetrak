@@ -23,7 +23,7 @@ impl Default for TimeState {
         Self {
             is_paused: false,
             speed_mult: 1.0,
-            sim_time: chrono::DateTime::parse_from_rfc3339("2020-01-01T12:00:00Z")
+            sim_time: chrono::DateTime::parse_from_rfc3339("2025-01-01T12:00:00Z")
                 .unwrap()
                 .with_timezone(&Utc),
         }

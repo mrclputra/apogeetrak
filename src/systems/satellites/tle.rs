@@ -74,7 +74,7 @@ impl Satellite {
     // generate orbital path and store it in self.orbit_path
     pub fn generate_orbit_path(&mut self, resolution: usize, base_time: DateTime<Utc>) {
         self.orbit_duration_m = if self.elements.mean_motion > 0.0 {
-            1440.0 / self.elements.mean_motion // minutes for one full orbit
+            1440.0 / self.elements.mean_motion // revolutions per day
         } else {
             90.0 // fallback for weird cases
         };
@@ -86,8 +86,9 @@ impl Satellite {
         for i in 0..resolution {
             // figure out what time this point represents
             let time_fraction = i as f64 / resolution as f64;
-            let time_offset_minutes = time_fraction * self.orbit_duration_m;
-            let point_time = base_time + Duration::minutes(time_offset_minutes as i64);
+            let time_offset_seconds = time_fraction * self.orbit_duration_m * 60.0;
+
+            let point_time = base_time + Duration::milliseconds((time_offset_seconds * 1000.0) as i64);
 
             if let Some(minutes_since_epoch) = self.minutes_since_epoch(point_time) {
                 let prediction = self.constants.propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))
