@@ -1,7 +1,7 @@
 use bevy::prelude::*;
-use chrono::Utc;
 
 use crate::systems::satellites::Satellite;
+use crate::systems::time::TimeState;
 
 pub struct UIPlugin;
 
@@ -12,28 +12,7 @@ impl Plugin for UIPlugin {
                 update_satellite_count, 
                 update_datetime, 
                 handle_time_control,
-                advance_sim_time,
             ));
-    }
-}
-
-// time control state resource
-#[derive(Resource)]
-pub struct TimeState {
-    pub is_paused: bool,
-    pub speed_mult: f64,
-    pub sim_time: chrono::DateTime<Utc>,
-}
-
-impl Default for TimeState {
-    fn default() -> Self {
-        Self {
-            is_paused: false,
-            speed_mult: 1.0,
-            sim_time: chrono::DateTime::parse_from_rfc3339("2000-01-01T12:00:00Z")
-                .unwrap()
-                .with_timezone(&Utc),
-        }
     }
 }
 
@@ -41,7 +20,7 @@ impl Default for TimeState {
 #[derive(Component)]
 pub struct SatelliteCounter;
 
-// UI component to display current datetimme
+// UI component to display current datetime
 #[derive(Component)]
 pub struct DateTimeDisplay;
 
@@ -59,9 +38,6 @@ pub fn start(
     mut commands: Commands,
     asset_server: Res<AssetServer>
 ) {
-    // initialize time state
-    commands.insert_resource(TimeState::default());
-
     // create UI container
     commands
         .spawn((
@@ -197,6 +173,7 @@ pub fn start(
         });
 }
 
+/// Handle time control button interactions
 fn handle_time_control(
     mut time_state: ResMut<TimeState>,
     mut interaction_query: Query<
@@ -220,43 +197,26 @@ fn handle_time_control(
     // handle backward button
     if let Ok(interaction) = backward_query.single() {
         if *interaction == Interaction::Pressed {
-            time_state.is_paused = false;
-
-            time_state.speed_mult = if time_state.speed_mult > 1.0 {
-                time_state.speed_mult / 2.0
-            } else if time_state.speed_mult == 1.0 {
-                -1.0
-            } else {
-                (time_state.speed_mult * 2.0).clamp(-4096.0, -1.0)
-            };
+            time_state.step_backward();
         }
     }
 
     // handle reset button
     if let Ok(interaction) = reset_query.single() {
         if *interaction == Interaction::Pressed {
-            time_state.speed_mult = 1.0;
-            time_state.is_paused = false;
+            time_state.reset_to_normal();
         }
     }
 
     // handle forward button
     if let Ok(interaction) = forward_query.single() {
         if *interaction == Interaction::Pressed {
-            time_state.is_paused = false;
-
-            time_state.speed_mult = if time_state.speed_mult < -1.0 {
-                (time_state.speed_mult / 2.0).clamp(1.0, -1.0)
-            } else if time_state.speed_mult == -1.0 {
-                1.0
-            } else {
-                (time_state.speed_mult * 2.0).clamp(1.0, 4096.0) // change max time speed here
-            };
+            time_state.step_forward();
         }
     }
 }
 
-// update the satellite count display
+/// update the satellite count display
 fn update_satellite_count(
     satellite_query: Query<&Satellite>,
     mut text_query: Query<&mut Text, With<SatelliteCounter>>,
@@ -268,7 +228,7 @@ fn update_satellite_count(
     }
 }
 
-// update the datetime display with current UTC time
+/// update the datetime display with current simulation time
 fn update_datetime(
     mut text_query: Query<&mut Text, With<DateTimeDisplay>>,
     time_state: Res<TimeState>,
@@ -280,18 +240,4 @@ fn update_datetime(
             time_state.speed_mult,
         );
     }
-}
-
-fn advance_sim_time(
-    time: Res<Time>,
-    mut time_state: ResMut<TimeState>,
-) {
-    if time_state.is_paused {
-        return;
-    }
-
-    let delta_seconds = time.delta_secs_f64();
-    let sim_delta = chrono::Duration::microseconds((delta_seconds * time_state.speed_mult * 1_000_000.0) as i64);
-
-    time_state.sim_time = time_state.sim_time + sim_delta;
 }

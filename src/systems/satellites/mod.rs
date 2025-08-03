@@ -5,7 +5,7 @@ pub mod labels;
 
 pub use tle::{Satellite, fetch_satellites};
 use labels::setup_labels;
-use crate::systems::ui::TimeState;
+use crate::systems::time::TimeState;
 
 /// Main satellite plugin
 pub struct SatellitePlugin;

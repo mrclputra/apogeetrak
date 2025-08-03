@@ -11,7 +11,7 @@ use normal::generate_normal_map;
 use crate::{config::{
     ATMOSPHERE_RADIUS, CLOUD_RADIUS, EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, EARTH_DISPLACEMENT_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_OCEAN_MASK_TEXTURE, EARTH_ROTATION_SPEED, EARTH_SPECULAR_TEXTURE, MIE_COEFF, RAYLEIGH_COEFF, SUN_INTENSITY
 }, systems::earth::normal::save_image_as_png, Sun};
-use crate::systems::ui::TimeState;
+use crate::systems::time::TimeState;
 
 pub struct EarthPlugin;
 

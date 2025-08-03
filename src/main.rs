@@ -5,6 +5,7 @@ pub mod config;
 
 // import camera and systems
 mod systems;
+use systems::time::TimePlugin;
 use systems::camera::CameraPlugin;
 use systems::ui::UIPlugin;
 
@@ -25,6 +26,7 @@ fn main() -> bevy::app::AppExit {
             global: false, // toggle wireframes here
             default_color: Color::BLACK,
         })
+        .add_plugins(TimePlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
         .add_plugins(SatellitePlugin)

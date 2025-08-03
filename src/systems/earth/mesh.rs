@@ -136,6 +136,7 @@ fn cube_point_to_sphere_point(p: Vec3) -> Vec3 {
 }
 
 /// Recalculate normals based on actual mesh geometry
+#[allow(dead_code)]
 fn recalculate_normals(normals: &mut Vec<Vec3>, vertices: &[Vec3], indices: &[u32]) {
     // reset normals
     normals.fill(Vec3::ZERO);
