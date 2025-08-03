@@ -73,7 +73,7 @@ fn sample_normal_map_sphere(uv: vec2<f32>, world_pos: vec3<f32>) -> vec3<f32> {
     let world_detail_normal = tbn_matrix * detail_normal;
 
     // u can control normal strength here
-    let blended_normal = normalize(mesh_normal + world_detail_normal * 0.3);
+    let blended_normal = normalize(mesh_normal + world_detail_normal * 0.32);
     
     return blended_normal;
 }
@@ -117,11 +117,11 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     
     // add some fake lighting
     // prevent flat when sun is overhead, thanks Mr.Lague
-    let fake_lighting = pow(dot(world_normal, point_on_sphere), 3.0);
+    let fake_lighting = pow(dot(world_normal, point_on_sphere), 2.0);
     
     // adjust day/night transition here
     let base_blend = 0.0015;
-    let day_night_blend = base_blend + (1.0 - base_blend) * smoothstep(0.0, 0.7, sun_factor);
+    let day_night_blend = base_blend + (1.0 - base_blend) * smoothstep(0.0, 0.62, sun_factor);
     
     // mix textures based on sun exposure
     var final_color = mix(night_color.rgb, day_color.rgb, day_night_blend);
@@ -165,7 +165,7 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     }
     
     // fake lighting to add dimension
-    final_color *= mix(fake_lighting, 1.0, 0.5);
+    final_color *= mix(fake_lighting, 0.6, 0.2);
 
     return vec4<f32>(final_color, 1.0);
 }
