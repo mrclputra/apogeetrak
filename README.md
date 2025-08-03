@@ -5,7 +5,7 @@ A 3D satellite tracking simulation built using the [Bevy](https://bevy.org/) gam
 ![](assets/1.jpg)
 ![](assets/2.jpg)
 
-This was a fun first project for me in familiarizing myself with the Rust workflow and exploring various PBR techniques.
+This was a fun first project for me in familiarizing myself with the Bevy workflow and exploring various PBR techniques.
 
 ## Install
 
@@ -22,6 +22,7 @@ The executable will be found under `target/release/`
 - **Right-click + drag** - Rotate camera
 - **Mouse wheel** - Zoom
 - **Time buttons** - Control simulation speed
+- **R** - Reset Camera
 
 ## Notes
 

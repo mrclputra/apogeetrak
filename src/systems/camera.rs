@@ -15,7 +15,7 @@ impl Plugin for CameraPlugin {
     }
 }
 
-// camera component - now with panning powers!
+// camera component
 #[derive(Component, Debug)]
 pub struct OrbitCamera {
     pub radius: f32,
@@ -96,6 +96,14 @@ impl OrbitCamera {
         self
     }
 
+    // reset camera to sensible defaults
+    pub fn reset(&mut self) {
+        self.target_radius = 15000.0;
+        self.target_angle = 0.0;
+        self.target_v_angle = 0.3;
+        self.target_position = Vec3::ZERO;
+    }
+
     // calculate world position from spherical coordinates
     // https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
     pub fn calculate_position(&self) -> Vec3 {
@@ -119,6 +127,7 @@ impl OrbitCamera {
 fn update_orbit_camera(
     mut camera_query: Query<(&mut Transform, &mut OrbitCamera)>,
     mouse_buttons: Res<ButtonInput<MouseButton>>,
+    keyboard: Res<ButtonInput<KeyCode>>,
     mut mouse_motion: EventReader<CursorMoved>,
     mut scroll_events: EventReader<MouseWheel>,
     time: Res<Time>,
@@ -127,6 +136,11 @@ fn update_orbit_camera(
     const SMOOTH_SPEED: f32 = 10.0;
 
     for (mut transform, mut camera) in camera_query.iter_mut() {
+        // reset camera on R key
+        if keyboard.just_pressed(KeyCode::KeyR) {
+            camera.reset();
+        }
+
         // handle mouse drag
         if mouse_buttons.just_pressed(MouseButton::Right) {
             camera.is_dragging = true;
