@@ -5,7 +5,7 @@ use bevy::render::camera::Camera;
 use bevy::window::Window;
 
 use crate::systems::satellites::Satellite;
-use crate::systems::ui::TimeState;
+use crate::systems::time::TimeState;
 use crate::config::EARTH_RADIUS;
 
 // full ui screen container component
@@ -76,7 +76,7 @@ pub fn update_labels(
         } else if should_show {
             // create new label
             let pos = screen_pos.unwrap(); // known Some
-            let (_, _, altitude) = satellite.geodetic_position_at_time(time_state.sim_time);
+            let (_, _, altitude) = satellite.geodetic_position(time_state.sim_time);
             
             let label_text = format!("{}\nAlt: {:.0}km", 
                 satellite.name(), 
