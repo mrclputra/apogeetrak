@@ -31,17 +31,17 @@ impl Default for TimeState {
 }
 
 impl TimeState {
-    pub fn reset(&mut self) {
-        *self = TimeState::default();
-    }
+    // pub fn reset(&mut self) {
+    //     *self = TimeState::default();
+    // }
 
-    pub fn set_speed(&mut self, speed: f64) {
-        self.speed_mult = speed.clamp(-4096.0, 4096.0);
-    }
+    // pub fn set_speed(&mut self, speed: f64) {
+    //     self.speed_mult = speed.clamp(-4096.0, 4096.0);
+    // }
 
-    pub fn toggle_pause(&mut self) {
-        self.is_paused = !self.is_paused;
-    }
+    // pub fn toggle_pause(&mut self) {
+    //     self.is_paused = !self.is_paused;
+    // }
 
     // decrease speed, or go negative
     pub fn step_backward(&mut self) {

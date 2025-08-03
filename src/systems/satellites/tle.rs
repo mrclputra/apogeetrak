@@ -55,21 +55,21 @@ impl Satellite {
     pub fn name(&self) -> &str {
         self.elements.object_name.as_deref().unwrap_or("Unknown")
     }
-    pub fn norad_id(&self) -> u64 {
-        self.elements.norad_id
-    }
-    pub fn intl_id(&self) -> &str {
-        self.elements.international_designator.as_deref().unwrap_or("Unknown")
-    }
-    pub fn inclination(&self) -> f64 {
-        self.elements.inclination
-    }
-    pub fn mean_motion(&self) -> f64 {
-        self.elements.mean_motion
-    }
-    pub fn epoch_datetime(&self) -> &chrono::NaiveDateTime {
-        &self.elements.datetime
-    }
+    // pub fn norad_id(&self) -> u64 {
+    //     self.elements.norad_id
+    // }
+    // pub fn intl_id(&self) -> &str {
+    //     self.elements.international_designator.as_deref().unwrap_or("Unknown")
+    // }
+    // pub fn inclination(&self) -> f64 {
+    //     self.elements.inclination
+    // }
+    // pub fn mean_motion(&self) -> f64 {
+    //     self.elements.mean_motion
+    // }
+    // pub fn epoch_datetime(&self) -> &chrono::NaiveDateTime {
+    //     &self.elements.datetime
+    // }
 
     // generate orbital path and store it in self.orbit_path
     pub fn generate_orbit_path(&mut self, resolution: usize, base_time: DateTime<Utc>) {

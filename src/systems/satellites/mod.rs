@@ -133,7 +133,7 @@ fn start(
                 satellite.generate_orbit_path(256, time_state.sim_time);
                 
                 // debug: print orbit info
-                println!("Generated orbit for {}: {:.1} minutes, {} points", 
+                info!("Generated orbit for {}: {:.1} minutes, {} points", 
                     satellite.name(), 
                     satellite.orbit_duration_m, 
                     satellite.orbit_path.len());

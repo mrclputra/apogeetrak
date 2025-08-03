@@ -7,10 +7,10 @@ pub mod normal;
 
 use mesh::generate_face;
 use materials::{EarthMaterial, AtmosphereMaterial, CloudMaterial, SunUniform, AtmosphereUniform};
-use normal::generate_normal_map;
+use normal::{generate_normal_map, save_image_as_png};
 use crate::{config::{
-    ATMOSPHERE_RADIUS, CLOUD_RADIUS, EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, EARTH_DISPLACEMENT_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_OCEAN_MASK_TEXTURE, EARTH_ROTATION_SPEED, EARTH_SPECULAR_TEXTURE, MIE_COEFF, RAYLEIGH_COEFF, SUN_INTENSITY
-}, systems::earth::normal::save_image_as_png, Sun};
+    ATMOSPHERE_RADIUS, CLOUD_RADIUS, EARTH_CLOUDS_TEXTURE, EARTH_DIFFUSE_TEXTURE, EARTH_DISPLACEMENT_TEXTURE, EARTH_NIGHT_TEXTURE, EARTH_OCEAN_MASK_TEXTURE, EARTH_ROTATION_SPEED, EARTH_SPECULAR_TEXTURE, MIE_COEFF, RAYLEIGH_COEFF, SUN_INTENSITY, USE_SAVED_NORMAL_MAP, SAVED_NORMAL_MAP_PATH
+}, Sun};
 use crate::systems::time::TimeState;
 
 pub struct EarthPlugin;
@@ -134,6 +134,8 @@ fn generate_earth_faces(
     mut earth_data: ResMut<EarthData>,
     asset_server: Res<AssetServer>,
 ) {
+    info!("Generating earth mesh...");
+
     // check if displacement map is loaded
     let displacement_image = {
         let maybe_image = images.get(&earth_data.displacement_handle);
@@ -143,15 +145,35 @@ fn generate_earth_faces(
         maybe_image.unwrap().clone()
     };
 
-    // generate normal map if not already done
+    // handle normal map
     if earth_data.normal_map_handle.is_none() {
-        info!("Generating normal map from displacement texture...");
-        let normal_map_image = generate_normal_map(&displacement_image);
-        save_image_as_png(&normal_map_image, "assets/normal_test.png");
-
-        let normal_map_handle = images.add(normal_map_image);
+        let normal_map_handle = if USE_SAVED_NORMAL_MAP {
+            // try to load the saved normal map first
+            match try_load_saved_normal_map(&asset_server) {
+                Some(handle) => {
+                    info!("Using normal maps...");
+                    handle
+                }
+                None => {
+                    // fallback
+                    info!("No normal maps found, creating new ones...");
+                    let normal_map_image = generate_normal_map(&displacement_image);
+                    save_image_as_png(&normal_map_image, &format!("assets/{}", SAVED_NORMAL_MAP_PATH));
+                    info!("Normal maps generated, saved to: assets/{}", SAVED_NORMAL_MAP_PATH);
+                    images.add(normal_map_image)
+                }
+            }
+        } else {
+            // always generate fresh
+            info!("Creating normal maps...");
+            let normal_map_image = generate_normal_map(&displacement_image);
+            
+            save_image_as_png(&normal_map_image, &format!("assets/{}", SAVED_NORMAL_MAP_PATH));
+            info!("Normal map generated");
+            images.add(normal_map_image)
+        };
+        
         earth_data.normal_map_handle = Some(normal_map_handle);
-        info!("Normal map generation complete!");
     }
 
     // create earth material if not already done
@@ -211,8 +233,20 @@ fn generate_earth_faces(
             }
         }
 
-        // cleanup - we're done with this resource
+        // cleanup
         commands.remove_resource::<EarthData>();
+
+        info!("Earth mesh generation complete...");
+    }
+}
+
+// helper function to try loading a saved normal map
+fn try_load_saved_normal_map(asset_server: &AssetServer) -> Option<Handle<Image>> {
+    // check if the file exists before trying to load it
+    if std::path::Path::new(&format!("assets/{}", SAVED_NORMAL_MAP_PATH)).exists() {
+        Some(asset_server.load(SAVED_NORMAL_MAP_PATH))
+    } else {
+        None
     }
 }
 

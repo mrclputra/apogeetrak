@@ -17,6 +17,10 @@ pub const ATMOSPHERE_SOFT_EDGE_START: f32 = 0.8; // where soft edge transition b
 // Rotation speeds
 pub const EARTH_ROTATION_SPEED: f32 = 0.00005;
 
+// Normal map generation stuff
+pub const USE_SAVED_NORMAL_MAP: bool = true;
+pub const SAVED_NORMAL_MAP_PATH: &str = "textures/normal_map.png";
+
 // Asset paths
 pub const EARTH_DIFFUSE_TEXTURE: &str = "textures/diffuse.tif";
 pub const EARTH_NIGHT_TEXTURE: &str = "textures/night.tif";
