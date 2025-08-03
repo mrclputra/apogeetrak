@@ -1,4 +1,4 @@
-# apogeetrak
+# bevy_tracksat
 
 A 3D satellite tracking simulation built using the [Bevy](https://bevy.org/) game engine and [SGP4](https://github.com/neuromorphicsystems/sgp4) crate for orbital mechanics.
 
@@ -10,8 +10,8 @@ This was a fun first project for me in familiarizing myself with the Bevy workfl
 ## Install
 
 ```bash
-git clone https://github.com/yourusername/apogeetrak.git
-cd apogeetrak
+git clone https://github.com/yourusername/bevy_tracksat.git
+cd bevy_tracksat
 cargo run --release
 ```
 
