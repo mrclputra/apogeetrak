@@ -1,3 +1,8 @@
+//! ui.rs
+//! 
+//! Simplistic UI implementation
+//! just has satellite count, datetime, and buttons for time control
+
 use bevy::prelude::*;
 
 use crate::systems::satellites::Satellite;
@@ -7,7 +12,7 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, start)
+        app.add_systems(Startup, setup)
            .add_systems(Update, (
                 update_satellite_count, 
                 update_datetime, 
@@ -34,7 +39,7 @@ pub struct BackwardButton;
 #[derive(Component)]
 pub struct ForwardButton;
 
-pub fn start(
+pub fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>
 ) {

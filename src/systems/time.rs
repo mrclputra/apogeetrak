@@ -1,3 +1,8 @@
+//! time.rs
+//! 
+//! Global time state resource across the simulation defined here
+//! pretty accurate
+
 use bevy::prelude::*;
 use chrono::Utc;
 

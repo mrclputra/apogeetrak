@@ -1,9 +1,15 @@
+//! main.rs
+//!
+//! Marcel Putra
+//! 04-08-2025
+//! TLE SGP4 satellite visualizer entry point.
+//! NORAD datasets are included in the assets folder
+
 use bevy::prelude::*;
 use bevy::pbr::wireframe::{WireframePlugin, WireframeConfig};
 
 pub mod config;
 
-// import camera and systems
 mod systems;
 use systems::time::TimePlugin;
 use systems::camera::CameraPlugin;
@@ -26,18 +32,17 @@ fn main() -> bevy::app::AppExit {
             global: false, // toggle wireframes here
             default_color: Color::BLACK,
         })
-        .add_plugins(TimePlugin)
+        .add_plugins(TimePlugin) // IMPORTANT
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin)
         .add_plugins(SatellitePlugin)
         .add_plugins(EarthPlugin)
         .insert_resource(ClearColor(Color::BLACK)) // background color
-        .add_systems(Startup, start)
+        .add_systems(Startup, setup)
         .run()
 }
 
-// set up the main scene
-fn start(
+fn setup(
     mut commands: Commands,
 ) {
     // spawn camera
@@ -49,13 +54,13 @@ fn start(
             .with_zoom_limits(7000.0, 100000.0)
     ));
 
-    // spawn the sun light
+    // spawn sun light source
     commands.spawn((
         DirectionalLight {
             illuminance: 1_700.,
             ..default()
         },
         Transform::from_xyz(50000.0, 50000.0, 50000.0).looking_at(Vec3::ZERO, Vec3::Y),
-        Sun, // component marker for sun tracking
+        Sun,
     ));
 }

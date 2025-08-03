@@ -1,6 +1,5 @@
 #import bevy_pbr::forward_io::VertexOutput
 
-// textures
 @group(2) @binding(0) var day_texture: texture_2d<f32>;
 @group(2) @binding(1) var day_sampler: sampler;
 @group(2) @binding(2) var night_texture: texture_2d<f32>;
@@ -11,14 +10,12 @@
 @group(2) @binding(7) var specular_map_sampler: sampler;
 @group(2) @binding(8) var normal_map: texture_2d<f32>;
 @group(2) @binding(9) var normal_map_sampler: sampler;
+@group(2) @binding(10) var<uniform> sun_uniform: SunUniform;
 
-// sun direction uniform
 struct SunUniform {
     sun_direction: vec3<f32>,
     _padding: f32, // 16-byte alignment
 };
-
-@group(2) @binding(10) var<uniform> sun_uniform: SunUniform;
 
 const PI: f32 = 3.14159265;
 
@@ -111,17 +108,18 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     let light_dir = normalize(sun_uniform.sun_direction);
     let view_dir = normalize(-in.world_position.xyz);
 
-    // point on unit sphere for consistent lighting reference
+    // point on unit sphere
+    // used as lighting reference
     let point_on_sphere = normalize(in.world_position.xyz);
     
-    // diffuse lighting calculation using normal-mapped surface
+    // diffuse lighting calculation
     let sun_factor = max(0.0, dot(world_normal, light_dir) + 0.0);
     
     // add some fake lighting
-    // prevent flat when sun is overhead
+    // prevent flat when sun is overhead, thanks Mr.Lague
     let fake_lighting = pow(dot(world_normal, point_on_sphere), 3.0);
     
-    // transition between day and night
+    // adjust day/night transition here
     let base_blend = 0.0015;
     let day_night_blend = base_blend + (1.0 - base_blend) * smoothstep(0.0, 0.7, sun_factor);
     
@@ -129,13 +127,13 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     var final_color = mix(night_color.rgb, day_color.rgb, day_night_blend);
 
     // apply ocean mask
-    // oceans are colourless, the sky makes them blue
+    // oceans are actually colourless, the sky makes them blue
     if (mask_value > 0.5) {
         final_color = desaturate(final_color, 0.85);
         
         // calculate ocean specular
-        let ocean_roughness = 0.1; // oceans are smoother
-        let ocean_specular_strength = specular_value * 200.0; // should give stronger specular
+        let ocean_roughness = 0.1; // oceans are smoother than terrain
+        let ocean_specular_strength = specular_value * 200.0; // stronger specular
         
         let ocean_specular = calculate_specular(
             world_normal,
@@ -150,8 +148,8 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
         final_color += ocean_specular * day_night_blend * ocean_specular_color;
     } else {
         // land specular 
-        let land_roughness = 1.0 - specular_value * 0.5; // land is rougher
-        let land_specular_strength = specular_value * 20.0; // should be weaker than ocean
+        let land_roughness = 1.0 - specular_value * 0.5; // land is rougher than the ocean
+        let land_specular_strength = specular_value * 20.0; // weaker specular
         
         let land_specular = calculate_specular(
             world_normal,

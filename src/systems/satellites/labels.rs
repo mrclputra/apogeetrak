@@ -1,3 +1,10 @@
+//! labels.rs
+//! 
+//! This module overlays text labels on top of visible satellites in the simulation
+//! 
+//! I couldn't figure out text panels in 3D space, so these are all implemented within the UI layer
+//! It's a bunch of text boxes that track satellites positions using projection magic
+
 use std::collections::HashMap;
 
 use bevy::prelude::*;
@@ -8,19 +15,19 @@ use crate::systems::satellites::Satellite;
 use crate::systems::time::TimeState;
 use crate::config::EARTH_RADIUS;
 
-// full ui screen container component
+/// full ui screen container component
 #[derive(Component)]
 pub struct LabelContainer;
 
-// individual satellite labels
+/// individual satellite labels
 #[derive(Component)]
 pub struct SatelliteLabel {
     pub satellite_entity: Entity,
     // add more attributes here (size, offset, etc)
 }
 
-// setup UI overlay
-pub fn setup_labels(mut commands: Commands) {
+/// setup UI overlay
+pub fn setup(mut commands: Commands) {
     // create UI container covering entire screen
     commands.spawn((
         Node {
@@ -34,7 +41,7 @@ pub fn setup_labels(mut commands: Commands) {
     ));
 }
 
-pub fn update_labels(
+pub fn update(
     mut commands: Commands,
     satellites: Query<(Entity, &Transform, &Satellite)>,
     camera: Query<(&Camera, &Transform)>,
@@ -104,7 +111,7 @@ pub fn update_labels(
 
 // UTILS
 
-// convert world coordinates to screen coordinates
+/// convert world coordinates to screen coordinates
 fn world_to_screen(
     world_pos: Vec3,
     camera: &Camera,
@@ -131,8 +138,8 @@ fn world_to_screen(
     ))
 }
 
-// check if satellite is visible from camera (unblocked by earth)
-// simple ray-sphere intersection test, tbf
+/// check if satellite is visible from camera (unblocked by earth)
+/// simple ray-sphere intersection test, tbf
 fn is_visible(sat_pos: Vec3, cam_pos: Vec3, earth_center: Vec3, earth_radius: f32) -> bool {
     let cam_to_sat = sat_pos - cam_pos;
     let cam_to_earth = earth_center - cam_pos;

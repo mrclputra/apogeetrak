@@ -1,3 +1,8 @@
+//! camera.rs
+//! 
+//! Built my own camera module
+//! to figure it out
+
 use bevy::prelude::*;
 use bevy::input::mouse::MouseWheel;
 

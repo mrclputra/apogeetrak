@@ -1,5 +1,7 @@
 #import bevy_pbr::forward_io::VertexOutput
 
+@group(2) @binding(0) var<uniform> atmosphere: AtmosphereUniform;
+
 // atmosphere paramaters
 struct AtmosphereUniform {
     sun_direction: vec3<f32>,
@@ -10,8 +12,6 @@ struct AtmosphereUniform {
     atmosphere_radius: f32,
     _padding: f32,
 }
-
-@group(2) @binding(0) var<uniform> atmosphere: AtmosphereUniform;
 
 // ray-marching config
 const SAMPLE_COUNT: i32 = 64;

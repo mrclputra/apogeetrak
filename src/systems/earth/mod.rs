@@ -1,3 +1,13 @@
+//! earth/mod.rs
+//! 
+//! Main earth renderer plugin
+//! Handles mesh generation and dynamic updates of earth-related entities:
+//! - The planet's surface mesh from displacement map
+//! - Precomputed normal maps
+//! - Atmospheric scattering effects
+//! - Cloud layer
+//! - Real-time lighting updates (for future seasons implementation)
+
 use bevy::prelude::*;
 
 pub mod materials;
@@ -20,7 +30,7 @@ impl Plugin for EarthPlugin {
         app.add_plugins(MaterialPlugin::<EarthMaterial>::default())
             .add_plugins(MaterialPlugin::<AtmosphereMaterial>::default())
             .add_plugins(MaterialPlugin::<CloudMaterial>::default())
-            .add_systems(Startup, start)
+            .add_systems(Startup, setup)
             .add_systems(Update, (
                 generate_earth_faces.run_if(resource_exists::<EarthData>),
                 update_shaders, 
@@ -29,19 +39,19 @@ impl Plugin for EarthPlugin {
     }
 }
 
-// earth tag
+/// earth tag
 #[derive(Component)]
 pub struct Earth;
 
-// atmosphere tag
+/// atmosphere tag
 #[derive(Component)]
 pub struct Atmosphere;
 
-// cloud tag
+/// cloud tag
 #[derive(Component)]
 pub struct Clouds;
 
-// holds everything needed for earth generation including normal map
+/// holds everything needed for earth generation including normal map
 #[derive(Resource)]
 struct EarthData {
     displacement_handle: Handle<Image>,
@@ -50,7 +60,7 @@ struct EarthData {
     earth_material: Option<Handle<EarthMaterial>>, // created after normal map generation
 }
 
-fn start(
+fn setup(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut atmosphere_materials: ResMut<Assets<AtmosphereMaterial>>,
@@ -125,7 +135,8 @@ fn start(
     });
 }
 
-// generate earth faces once displacement map is loaded
+/// generate earth faces
+/// only runs after displacement map is loaded
 fn generate_earth_faces(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -240,7 +251,7 @@ fn generate_earth_faces(
     }
 }
 
-// helper function to try loading a saved normal map
+/// helper function to try loading a saved normal map
 fn try_load_saved_normal_map(asset_server: &AssetServer) -> Option<Handle<Image>> {
     // check if the file exists before trying to load it
     if std::path::Path::new(&format!("assets/{}", SAVED_NORMAL_MAP_PATH)).exists() {
@@ -250,7 +261,7 @@ fn try_load_saved_normal_map(asset_server: &AssetServer) -> Option<Handle<Image>
     }
 }
 
-// update shaders
+/// update shaders
 fn update_shaders(
     sun_query: Query<&Transform, With<Sun>>,
     camera_query: Query<&Transform, (With<Camera3d>, Without<Sun>)>,
@@ -296,7 +307,7 @@ fn update_shaders(
     }
 }
 
-// rotate earth and clouds
+/// rotate earth
 fn rotate(
     time_state: Res<TimeState>,
     mut earth_query: Query<&mut Transform, With<Earth>>,

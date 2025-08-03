@@ -1,3 +1,7 @@
+//! mesh.rs
+//! 
+//! Generates a spherical mesh by projecting a flat grid onto a sphere face
+
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssetUsages;

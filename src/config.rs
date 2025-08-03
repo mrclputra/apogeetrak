@@ -1,24 +1,25 @@
-// Earth measurements (in kilometers)
+//! config.rs
+//!
+//! Configure some simulation constants here
+//! Not all are included, some are still magic numbers in code somewhere :P
+
+// Earth measurements (in km)
 pub const EARTH_RADIUS: f32 = 6378.0;
 pub const ATMOSPHERE_RADIUS: f32 = 7000.0;
 pub const CLOUD_RADIUS: f32 = 6478.0;
-pub const DISPLACEMENT_SCALE: f32 = 80.0; // maximum displacement, in km
+pub const DISPLACEMENT_SCALE: f32 = 80.0; // maximum terrain height
 
 // Atmospheric scattering parameters
-// https://physics.stackexchange.com/questions/241190
-pub const RAYLEIGH_COEFF: [f32; 3] = [0.0000055, 0.000013, 0.0000224]; // RGB wavelengths
-pub const MIE_COEFF: f32 = 0.0005;
-pub const SUN_INTENSITY: f32 = 22.0;
-
-// Atmosphere quality settings
-pub const ATMOSPHERE_SAMPLE_COUNT: i32 = 24; // ray marching steps for atmosphere
-pub const ATMOSPHERE_SOFT_EDGE_START: f32 = 0.8; // where soft edge transition begins (as fraction of atmosphere radius)
+// based on values from https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/simulating-sky/simulating-colors-of-the-sky.html
+pub const RAYLEIGH_COEFF: [f32; 3] = [5.8e-6, 13.5e-6, 33.1e-6]; // RGB wavelengths
+pub const MIE_COEFF: f32 = 210.0e-5;
+pub const SUN_INTENSITY: f32 = 10.0;
 
 // Rotation speeds
-pub const EARTH_ROTATION_SPEED: f32 = 0.00005;
+pub const EARTH_ROTATION_SPEED: f32 = 0.00005; // radians, dont touch
 
-// Normal map generation stuff
-pub const USE_SAVED_NORMAL_MAP: bool = true;
+// Normal map generation config
+pub const USE_SAVED_NORMAL_MAP: bool = true; // change this if you want the program to generate a new normal map every time it compiles
 pub const SAVED_NORMAL_MAP_PATH: &str = "textures/normal_map.png";
 
 // Asset paths

@@ -1,11 +1,16 @@
+//! materials.rs
+//! 
+//! Materials and uniforms for Earth rendering
+//! GPU uniforms are defined here (the stuff we pass to the shader)
+
 use bevy::prelude::*;
 use bevy::render::render_resource::*;
 use bevy::reflect::TypePath;
 use bevy::asset::Asset;
 
-// sun direction data (needs to be in a struct)
-// this is how to pass sun vector3 data to the earth shader (local only)
-// https://www.w3.org/TR/WGSL/#address-space-layout-constraints
+/// sun direction data (needs to be in a struct)
+/// this is how to pass sun vector3 data to the earth shader (local only)
+/// https://www.w3.org/TR/WGSL/#address-space-layout-constraints
 #[derive(ShaderType, Clone, Copy, Debug)]
 #[repr(C)]
 pub struct SunUniform {
@@ -13,14 +18,12 @@ pub struct SunUniform {
     pub _padding: f32, // ensures proper 16-byte GPU alignment
 }
 
-// atmosphere uniform data
+/// atmosphere uniform data
 #[derive(ShaderType, Clone, Copy, Debug)]
 #[repr(C)]
 pub struct AtmosphereUniform {
     pub sun_direction: Vec3,
     pub camera_position: Vec3,
-
-    // https://en.wikipedia.org/wiki/Rayleigh_scattering
     pub rayleigh_coeff: Vec3,
     pub mie_coeff: f32,
     pub sun_intensity: f32,
@@ -28,7 +31,7 @@ pub struct AtmosphereUniform {
     pub _padding: f32,
 }
 
-// earth material
+/// earth material
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct EarthMaterial {
     #[texture(0)]
@@ -60,7 +63,7 @@ impl Material for EarthMaterial {
     }
 }
 
-// atmosphere material
+/// atmosphere material
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct AtmosphereMaterial {
     #[uniform(0)]
@@ -87,7 +90,7 @@ impl Material for AtmosphereMaterial {
     }
 }
 
-// cloud material
+/// cloud material
 #[derive(Asset, TypePath, AsBindGroup, Debug, Clone)]
 pub struct CloudMaterial {
     #[texture(0)]

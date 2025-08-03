@@ -1,31 +1,34 @@
+//! satellites/mod.rs
+//! 
+//! Satellite visualization and orbit renderer plugin
+
 use bevy::prelude::*;
 
 pub mod tle;
 pub mod labels;
 
 pub use tle::{Satellite, fetch_satellites};
-use labels::setup_labels;
+use labels::setup;
 use crate::systems::time::TimeState;
 
-/// Main satellite plugin
+/// Main plugin
 pub struct SatellitePlugin;
 
 impl Plugin for SatellitePlugin {
     fn build(&self, app: &mut App) {
         app
             .add_systems(Startup, (
-                setup_labels,
-                start.after(crate::systems::ui::start),
+                setup,
+                start.after(crate::systems::ui::setup),
             ))
             .add_systems(Update, (
-                update_positions,
-                labels::update_labels,
+                update,
+                labels::update,
             ));
     }
 }
 
-// create line mesh from a series of points
-// wraps around
+/// Create line mesh from a series of points, wraps around
 fn create_trail_mesh(points: &[Vec3]) -> Mesh {
     let mut positions = Vec::new();
     let mut indices = Vec::new();
@@ -54,6 +57,7 @@ fn create_trail_mesh(points: &[Vec3]) -> Mesh {
     mesh
 }
 
+/// Render orbital meshes
 fn render_orbits(
     satellites: &[Satellite],
     commands: &mut Commands,
@@ -88,8 +92,8 @@ fn render_orbits(
     }
 }
 
-// update satellite positions
-fn update_positions(
+/// update satellite positions
+fn update(
     time_state: Res<TimeState>,
     mut satellite_query: Query<(&Satellite, &mut Transform)>,
 ) {
@@ -101,8 +105,8 @@ fn update_positions(
     }
 }
 
-// called on startup
-// setup satellites, meshes, and stuff
+/// called on startup
+/// setup satellites, meshes, and stuff
 fn start(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,

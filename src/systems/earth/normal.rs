@@ -1,3 +1,7 @@
+//! normal.rs
+//! 
+//! Normal map generator for height textures on a sphere
+
 use bevy::prelude::*;
 use bevy::render::render_asset::RenderAssetUsages;
 use bevy::render::render_resource::{Extent3d, TextureDimension, TextureFormat};
@@ -134,12 +138,14 @@ fn wrap_u(u: f32) -> f32 {
     }
 }
 
-/// Clamp V coordinate (latitude) to valid range
+/// Clamp V coordinate (latitude)
 fn wrap_v(v: f32) -> f32 {
     v.clamp(0.0, 1.0)
 }
 
-/// HELPER
+// HELPERS
+
+/// save normal map to an image file 
 pub fn save_image_as_png(image: &Image, path: &str) {
     let width = image.texture_descriptor.size.width;
     let height = image.texture_descriptor.size.height;

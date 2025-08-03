@@ -1,3 +1,9 @@
+//! tle.rs
+//! 
+//! Orbital mechanics utilities here
+//! uses SGP4 model to propagate satellite orbits from TLE datasets, and convert
+//! orbital predictions into Bevy world coordinates
+
 use bevy::prelude::*;
 
 use bevy::asset::uuid::Error;
@@ -131,7 +137,7 @@ impl Satellite {
             .lerp(self.orbit_path[segment_index + 1].position, t as f32)
     }
 
-    // get geodetic position at specific time (lat, lon, alt)
+    /// get geodetic position at specific time (lat, lon, alt)
     pub fn geodetic_position(&self, time: DateTime<Utc>) -> (f64, f64, f64) {
         let position = self.get_position(time);
         cartesian_to_geodetic(
@@ -143,7 +149,7 @@ impl Satellite {
 
     // HELPERS
 
-    // time difference from TLE epoch
+    /// time difference since TLE epoch
     fn minutes_since_epoch(&self, target_time: DateTime<Utc>) -> Option<f64> {
         let target_naive = target_time.naive_utc();
 
@@ -156,8 +162,8 @@ impl Satellite {
 
 // UTILS
 
-// convert Cartesian coordinates (x, y, z) to Geodetic coordinates (lat, lon, alt)
-// https://en.wikipedia.org/wiki/Geodetic_coordinates
+/// convert Cartesian coordinates (x, y, z) to Geodetic coordinates (lat, lon, alt)
+/// https://en.wikipedia.org/wiki/Geodetic_coordinates
 pub fn cartesian_to_geodetic(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
     let distance = (x*x + y*y + z*z).sqrt();
     let altitude = distance - EARTH_RADIUS as f64;
@@ -168,7 +174,7 @@ pub fn cartesian_to_geodetic(x: f64, y: f64, z: f64) -> (f64, f64, f64) {
     (latitude, longitude, altitude)
 }
 
-// convert SGP4 coordinates to Bevy world coordinates
+/// convert SGP4 coordinates to Bevy world coordinates
 pub fn sgp4_to_cartesian(prediction: &Prediction) -> Vec3 {
     // SGP4 returns coordinates in kilometers
     Vec3::new(
@@ -178,8 +184,7 @@ pub fn sgp4_to_cartesian(prediction: &Prediction) -> Vec3 {
     )
 }
 
-// fetch satellite data
-// async
+/// fetch satellite data, asynchronous
 pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
     let path = Path::new("assets/data/weather.txt");
     let tle_data = match fs::read_to_string(path) {

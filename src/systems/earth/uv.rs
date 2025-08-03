@@ -1,3 +1,7 @@
+//! uv.rs
+//! 
+//! geographic coordinate conversion utilities for spherical mapping.
+
 use bevy::prelude::*;
 use std::f32::consts::PI;
 
@@ -7,8 +11,8 @@ pub struct LatLon {
     pub longitude: f32,
 }
 
-// convert from cartesian
-// https://en.wikipedia.org/wiki/Geodetic_coordinates
+/// convert from cartesian
+/// https://en.wikipedia.org/wiki/Geodetic_coordinates
 impl From<Vec3> for LatLon {
     fn from(value: Vec3) -> Self {
         let normalized = value.normalize();
