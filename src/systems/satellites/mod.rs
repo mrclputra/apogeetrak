@@ -62,7 +62,7 @@ fn render_orbits(
 ) {
     // create orbit material, reusable
     let orbit_material = materials.add(StandardMaterial {
-        base_color: Color::srgba(1.0, 1.0, 1.0, 0.05),
+        base_color: Color::srgba(1.0, 1.0, 1.0, 0.03),
         alpha_mode: AlphaMode::Blend,
         unlit: true, // glowing effect
         ..default()
@@ -144,7 +144,7 @@ fn start(
                 let position = satellite.get_position(time_state.sim_time);
                 
                 commands.spawn((
-                    Mesh3d(meshes.add(Sphere::new(50.0).mesh().ico(8).unwrap())),
+                    Mesh3d(meshes.add(Sphere::new(10.0).mesh().ico(8).unwrap())),
                     MeshMaterial3d(satellite_material.clone()),
                     Transform::from_translation(position),
                     satellite.clone(),

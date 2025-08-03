@@ -180,7 +180,7 @@ pub fn sgp4_to_cartesian(prediction: &Prediction) -> Vec3 {
 // fetch satellite data
 // async
 pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
-    let path = Path::new("assets/data/brightest.txt");
+    let path = Path::new("assets/data/weather.txt");
     let tle_data = match fs::read_to_string(path) {
         Ok(contents) => {
             println!("Loaded TLE data from local file: {:?}", path);

@@ -108,7 +108,7 @@ fn start(
                 direction: sun_direction,
                 _padding: 0.0,
             },
-            cloud_opacity: 0.3,
+            cloud_opacity: 0.7,
         })),
         Transform::from_xyz(0.0, 0.0, 0.0)
             .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),

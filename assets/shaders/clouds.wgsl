@@ -8,6 +8,7 @@ struct SunUniform {
 @group(2) @binding(0) var cloud_texture: texture_2d<f32>;
 @group(2) @binding(1) var cloud_sampler: sampler;
 @group(2) @binding(2) var<uniform> sun_uniform: SunUniform;
+@group(2) @binding(3) var<uniform> cloud_opacity: f32;
 
 @fragment
 fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
@@ -30,5 +31,5 @@ fn fragment(in: VertexOutput) -> @location(0) vec4<f32> {
    // darken clouds at night
    let surface_light = max(0.0, sun_uniform.sun_direction.y * 0.5 + 0.5);
    
-   return vec4<f32>(final_color * surface_light, alpha);
+   return vec4<f32>(final_color * surface_light, alpha * cloud_opacity);
 }
