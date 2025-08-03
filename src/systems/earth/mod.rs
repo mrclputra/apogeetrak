@@ -70,7 +70,7 @@ fn setup(
     // sun direction
     let sun_direction = Vec3::new(1.0, 1.0, 1.0).normalize();
 
-    // load textures (except we'll generate the normal map)
+    // load textures
     let displacement_handle = asset_server.load(EARTH_DISPLACEMENT_TEXTURE);
     let cloud_texture = asset_server.load(EARTH_CLOUDS_TEXTURE);
 
@@ -160,7 +160,7 @@ fn generate_earth_faces(
     if earth_data.normal_map_handle.is_none() {
         let normal_map_handle = if USE_SAVED_NORMAL_MAP {
             // try to load the saved normal map first
-            match try_load_saved_normal_map(&asset_server) {
+            match load_saved_normal_map(&asset_server) {
                 Some(handle) => {
                     info!("Using normal maps...");
                     handle
@@ -187,7 +187,7 @@ fn generate_earth_faces(
         earth_data.normal_map_handle = Some(normal_map_handle);
     }
 
-    // create earth material if not already done
+    // create earth material
     if earth_data.earth_material.is_none() {
         let sun_direction = Vec3::new(1.0, 1.0, 1.0).normalize();
         
@@ -212,7 +212,7 @@ fn generate_earth_faces(
         earth_data.earth_material = Some(earth_material);
     }
 
-    // generate earth mesh faces now that we have everything
+    // generate earth mesh faces
     if let Some(ref earth_material) = earth_data.earth_material {
         let faces = vec![
             Vec3::X,        // right
@@ -252,7 +252,7 @@ fn generate_earth_faces(
 }
 
 /// helper function to try loading a saved normal map
-fn try_load_saved_normal_map(asset_server: &AssetServer) -> Option<Handle<Image>> {
+fn load_saved_normal_map(asset_server: &AssetServer) -> Option<Handle<Image>> {
     // check if the file exists before trying to load it
     if std::path::Path::new(&format!("assets/{}", SAVED_NORMAL_MAP_PATH)).exists() {
         Some(asset_server.load(SAVED_NORMAL_MAP_PATH))

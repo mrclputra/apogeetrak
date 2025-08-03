@@ -2,6 +2,7 @@
 //! 
 //! Built my own camera module
 //! to figure it out
+//! Now with panning support!
 
 use bevy::prelude::*;
 use bevy::input::mouse::MouseWheel;
@@ -14,7 +15,7 @@ impl Plugin for CameraPlugin {
     }
 }
 
-// camera component
+// camera component - now with panning powers!
 #[derive(Component, Debug)]
 pub struct OrbitCamera {
     pub radius: f32,
@@ -22,6 +23,7 @@ pub struct OrbitCamera {
     pub angle: f32,
     pub v_angle: f32,
     pub is_dragging: bool,
+    pub is_panning: bool,
     pub target: Vec3,
 
     pub min_radius: f32,
@@ -31,6 +33,10 @@ pub struct OrbitCamera {
     target_radius: f32,
     target_angle: f32,
     target_v_angle: f32,
+    target_position: Vec3, // for panning
+
+    // panning sensitivity
+    pub pan_speed: f32,
 }
 
 impl Default for OrbitCamera {
@@ -41,6 +47,7 @@ impl Default for OrbitCamera {
             angle: 0.0,
             v_angle: 0.3,
             is_dragging: false,
+            is_panning: false,
             target: Vec3::ZERO,
 
             min_radius: 0.0,
@@ -49,6 +56,9 @@ impl Default for OrbitCamera {
             target_radius: 15.0,
             target_angle: 0.0,
             target_v_angle: 0.3,
+            target_position: Vec3::ZERO,
+
+            pan_speed: 0.1,
         }
     }
 }
@@ -59,6 +69,7 @@ impl OrbitCamera {
             radius,
             speed,
             target_radius: radius,
+            target_position: Vec3::ZERO,
             ..default()
         }
     }
@@ -67,6 +78,7 @@ impl OrbitCamera {
     // to be used/implemented itf
     pub fn with_target(mut self, target: Vec3) -> Self {
         self.target = target;
+        self.target_position = target;  // sync the smooth target too
         self
     }
 
@@ -78,6 +90,12 @@ impl OrbitCamera {
         self
     }
 
+    // set how fast panning feels
+    pub fn with_pan_speed(mut self, pan_speed: f32) -> Self {
+        self.pan_speed = pan_speed;
+        self
+    }
+
     // calculate world position from spherical coordinates
     // https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
     pub fn calculate_position(&self) -> Vec3 {
@@ -86,6 +104,15 @@ impl OrbitCamera {
         let z = self.radius * self.v_angle.cos() * self.angle.sin();
         
         self.target + Vec3::new(x, y, z)
+    }
+
+    // helper function to get the camera's right and up vectors for panning
+    // lets us move in screen space rather than world space
+    fn get_camera_basis(&self) -> (Vec3, Vec3) {
+        let forward = (self.target - self.calculate_position()).normalize();
+        let right = forward.cross(Vec3::Y).normalize();
+        let up = right.cross(forward).normalize();
+        (right, up)
     }
 }
 
@@ -108,15 +135,34 @@ fn update_orbit_camera(
             camera.is_dragging = false;
         }
 
-        // update camera angles
-        if camera.is_dragging {
+        // handle mouse drag, panning
+        if mouse_buttons.just_pressed(MouseButton::Middle) {
+            camera.is_panning = true;
+        }
+        if mouse_buttons.just_released(MouseButton::Middle) {
+            camera.is_panning = false;
+        }
+
+        // update camera angles 
+        if camera.is_dragging || camera.is_panning {
             for motion in mouse_motion.read() {
                 if let Some(delta) = motion.delta {
-                    camera.target_angle += delta.x * camera.speed * 0.01;
-                    camera.target_v_angle += delta.y * camera.speed * 0.01;
+                    if camera.is_dragging {
+                        // rotating around the target
+                        camera.target_angle += delta.x * camera.speed * 0.01;
+                        camera.target_v_angle += delta.y * camera.speed * 0.01;
+                        // clamp pitch on the target value so we don't flip upside down
+                        camera.target_v_angle = camera.target_v_angle.clamp(-1.5, 1.5);
+                    } else if camera.is_panning {
+                        // moving the target point around in screen space
+                        let (right, up) = camera.get_camera_basis();
+                        let pan_distance = camera.radius * 0.001; // scale panning with distance
+                        
+                        // move target in camera's local coordinate system
+                        let pan_offset = (-right * delta.x + up * delta.y) * camera.pan_speed * pan_distance;
+                        camera.target_position += pan_offset;
+                    }
                 }
-                // clamp pitch on the target value
-                camera.target_v_angle = camera.target_v_angle.clamp(-1.5, 1.5);
             }
         }
 
@@ -133,6 +179,10 @@ fn update_orbit_camera(
         camera.angle += (camera.target_angle - camera.angle) * dt * SMOOTH_SPEED;
         camera.v_angle += (camera.target_v_angle - camera.v_angle) * dt * SMOOTH_SPEED;
         camera.radius += (camera.target_radius - camera.radius) * dt * SMOOTH_SPEED;
+        
+        // smooth the target position change
+        let new_target = camera.target + (camera.target_position - camera.target) * dt * SMOOTH_SPEED;
+        camera.target = new_target;
 
         // update camera position/orientation
         transform.translation = camera.calculate_position();

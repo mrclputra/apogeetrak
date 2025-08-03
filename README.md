@@ -1,6 +1,10 @@
 # apogeetrak
 
 A 3D satellite tracking simulation built using the [Bevy](https://bevy.org/) game engine and [SGP4](https://github.com/neuromorphicsystems/sgp4) crate for orbital mechanics.
+
+![](assets/1.jpg)
+![](assets/2.jpg)
+
 This was a fun first project for me in familiarizing myself with the Rust workflow and exploring various PBR techniques.
 
 ## Install

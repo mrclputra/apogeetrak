@@ -189,7 +189,7 @@ pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
     let path = Path::new("assets/data/weather.txt");
     let tle_data = match fs::read_to_string(path) {
         Ok(contents) => {
-            println!("Loaded TLE data from local file: {:?}", path);
+            info!("Loaded TLE data from local file: {:?}", path);
             contents
         }
         Err(err) => {
@@ -210,6 +210,6 @@ pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
         }
     }
 
-    println!("Parsed {} satellites", satellites.len());
+    info!("Parsed {} satellites", satellites.len());
     Ok(satellites)
 }

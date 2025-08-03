@@ -52,6 +52,7 @@ fn setup(
         systems::camera::OrbitCamera::new(15000.0, 0.3)
             .with_target(Vec3::ZERO)
             .with_zoom_limits(7000.0, 100000.0)
+            .with_pan_speed(2.0)
     ));
 
     // spawn sun light source

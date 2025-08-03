@@ -20,7 +20,7 @@ pub const EARTH_ROTATION_SPEED: f32 = 0.00005; // radians, dont touch
 
 // Normal map generation config
 pub const USE_SAVED_NORMAL_MAP: bool = true; // change this if you want the program to generate a new normal map every time it compiles
-pub const SAVED_NORMAL_MAP_PATH: &str = "textures/normal_map.png";
+pub const SAVED_NORMAL_MAP_PATH: &str = "textures/normal.png";
 
 // Asset paths
 pub const EARTH_DIFFUSE_TEXTURE: &str = "textures/diffuse.tif";
