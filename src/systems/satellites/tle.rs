@@ -1,24 +1,30 @@
-// Updated Satellite implementation in src/systems/satellites/tle.rs
-
 use bevy::prelude::*;
 
-use chrono::{Utc, DateTime, Datelike};
-use reqwest::Error;
-use reqwest::header::USER_AGENT;
+use bevy::asset::uuid::Error;
+use chrono::{DateTime, Duration, Utc};
 use sgp4::Prediction;
 
-// TEMP
 use std::fs;
 use std::path::Path;
 
 use crate::config::EARTH_RADIUS;
 
-// unified satellite component type
+// point in orbital path
+#[derive(Clone, Debug)]
+pub struct OrbitPoint {
+    pub time: DateTime<Utc>,
+    pub position: Vec3,
+}
+
+// satellite component
 #[derive(Component, Clone)]
 pub struct Satellite {
-    // SGP4 datatypes, extracted from TLE lines
+    // sgp4 datatypes
     pub elements: sgp4::Elements,
     pub constants: sgp4::Constants,
+
+    pub orbit_path: Vec<OrbitPoint>,
+    pub orbit_duration_m: f64, // how long the orbit path covers, minutes
 }
 
 impl Satellite {
@@ -39,7 +45,9 @@ impl Satellite {
 
         Some(Satellite {
             elements,
-            constants
+            constants,
+            orbit_path: Vec::new(), // will be populated later
+            orbit_duration_m: 0.0,
         })
     }
 
@@ -63,26 +71,87 @@ impl Satellite {
         &self.elements.datetime
     }
 
-    // calculates position of satellite given a time
-    // 'Prediction' type returns (x, y, z) position and (vX, vY, vZ) velocities
-    pub fn calculate(&self, propagation_time: DateTime<Utc>) -> Prediction {
-        let tsince = match self.minutes_since_epoch(propagation_time) {
-            Some(t) => t,
-            None => {
-                return Prediction {
-                    position: [0.0, 0.0, 0.0],
-                    velocity: [0.0, 0.0, 0.0],
-                };
-            }
+    // generate orbital path and store it in self.orbit_path
+    pub fn generate_orbit_path(&mut self, resolution: usize, base_time: DateTime<Utc>) {
+        self.orbit_duration_m = if self.elements.mean_motion > 0.0 {
+            1440.0 / self.elements.mean_motion // minutes for one full orbit
+        } else {
+            90.0 // fallback for weird cases
         };
 
-        self.constants.propagate(sgp4::MinutesSinceEpoch(tsince))
-            .unwrap_or_else(|_| Prediction {
-                position: [0.0, 0.0, 0.0],
-                velocity: [0.0, 0.0, 0.0],
-            })
+        self.orbit_path.clear();
+        self.orbit_path.reserve(resolution);
+
+        // generate points along orbital path
+        for i in 0..resolution {
+            // figure out what time this point represents
+            let time_fraction = i as f64 / resolution as f64;
+            let time_offset_minutes = time_fraction * self.orbit_duration_m;
+            let point_time = base_time + Duration::minutes(time_offset_minutes as i64);
+
+            if let Some(minutes_since_epoch) = self.minutes_since_epoch(point_time) {
+                let prediction = self.constants.propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))
+                    .unwrap_or_else(|_| Prediction {
+                        position: [0.0, 0.0, 0.0],
+                        velocity: [0.0, 0.0, 0.0],
+                    });
+                
+                let position = sgp4_to_cartesian(&prediction);
+                
+                self.orbit_path.push(OrbitPoint {
+                    time: point_time,
+                    position,
+                });
+            }
+        }
     }
 
+    /// Get position of satellite given a time value
+    /// interpolates across the generated orbit path
+    pub fn get_position(&self, target_time: DateTime<Utc>) -> Vec3 {
+        if self.orbit_path.is_empty() {
+            return Vec3::ZERO;
+        }
+
+        // single point case
+        if self.orbit_path.len() == 1 {
+            return self.orbit_path[0].position;
+        }
+
+        let base_time = self.orbit_path[0].time;
+        let elapsed_minutes = (target_time - base_time).num_minutes() as f64;
+
+        let cycle_time = elapsed_minutes % self.orbit_duration_m;
+
+        let time_per_segment = self.orbit_duration_m / (self.orbit_path.len() - 1) as f64;
+        let segment_index = (cycle_time / time_per_segment).floor() as usize;
+
+        // edge case, where point is at end of orbit
+        let segment_index = segment_index.min(self.orbit_path.len() - 2);
+
+        // interpolate between two points
+        let point_a = &self.orbit_path[segment_index];
+        let point_b = &self.orbit_path[segment_index + 1];
+
+        let segment_start_time = segment_index as f64 * time_per_segment;
+        let t = ((cycle_time - segment_start_time) / time_per_segment).clamp(0.0, 1.0);
+        
+        point_a.position.lerp(point_b.position, t as f32)
+    }
+
+    // get geodetic position at specific time (lat, lon, alt)
+    pub fn geodetic_position(&self, time: DateTime<Utc>) -> (f64, f64, f64) {
+        let position = self.get_position(time);
+        cartesian_to_geodetic(
+            position.x as f64,
+            position.y as f64, 
+            position.z as f64
+        )
+    }
+
+    // HELPERS
+
+    // time difference from TLE epoch
     fn minutes_since_epoch(&self, target_time: DateTime<Utc>) -> Option<f64> {
         let target_naive = target_time.naive_utc();
 
@@ -91,115 +160,6 @@ impl Satellite {
             Err(_) => None,
         }
     }
-
-    // calculate orbital trajectory at a specific time
-    // returns a traversable array of points on orbital path
-    pub fn generate_orbit_path(&self, resolution: usize, base_time: DateTime<Utc>) -> Vec<Vec3> {
-        let mut path_points = Vec::with_capacity(resolution); // optimization
-
-        let orbital_period = if self.elements.mean_motion > 0.0 {
-            1440.0 / self.elements.mean_motion // minutes in one orbit
-        } else {
-            90.0 // fallback
-        };
-
-        // generate points along the orbit
-        // start from base time
-        for i in 0..resolution {
-            let time_offset_minutes = (i as f64 / resolution as f64) * orbital_period;
-            let offset_duration = chrono::Duration::seconds((time_offset_minutes * 60.0) as i64);
-            let target_time = base_time + offset_duration;
-
-            let prediction = self.calculate(target_time);
-            let pos = sgp4_to_cartesian(&prediction);
-            path_points.push(pos);
-        }
-
-        path_points
-    }
-
-    // HELPERS
-
-    // get position at specific time (x, y, z)
-    pub fn position_at_time(&self, time: DateTime<Utc>) -> Vec3 {
-        let prediction = self.calculate(time);
-        sgp4_to_cartesian(&prediction)
-    }
-
-    // get geodetic position at specific time (lat, lon, alt)
-    pub fn geodetic_position_at_time(&self, time: DateTime<Utc>) -> (f64, f64, f64) {
-        let prediction = self.calculate(time);
-        cartesian_to_geodetic(
-            prediction.position[0],
-            prediction.position[1], 
-            prediction.position[2]
-        )
-    }
-
-    // get velocity at specific time (vX, vY, vZ)
-    #[allow(dead_code)]
-    pub fn velocity_at_time(&self, time: DateTime<Utc>) -> (f64, f64, f64) {
-        let prediction = self.calculate(time);
-        (
-            prediction.velocity[0],
-            prediction.velocity[1],
-            prediction.velocity[2]
-        )
-    }
-
-    // convenience methods that use current time (for backwards compatibility)
-    // pub fn current_position(&self) -> Vec3 {
-    //     self.position_at_time(Utc::now())
-    // }
-
-    // pub fn current_geodetic_position(&self) -> (f64, f64, f64) {
-    //     self.geodetic_position_at_time(Utc::now())
-    // }
-
-    // #[allow(dead_code)]
-    // pub fn current_velocity(&self) -> (f64, f64, f64) {
-    //     self.velocity_at_time(Utc::now())
-    // }
-
-    // just prints contents
-    #[allow(dead_code)]
-    pub fn print_at_time(&self, time: DateTime<Utc>) {
-        println!("  Name        : {}", self.name());
-        println!("  NORAD ID    : {}", self.norad_id());
-        println!("  Intl ID     : {}", self.intl_id());
-        println!("  Inclination : {:.2}", self.inclination());
-        println!("  Mean Motion : {:.2}", self.mean_motion());
-        println!("  Epoch       : Year {} Day {:.2}", self.epoch_datetime().year(), self.epoch_datetime().day());
-        println!();
-
-        // print ECI position at time
-        let pos = self.position_at_time(time);
-        println!(
-            "  ECI         : {:.2} km, {:.2} km, {:.2} km", pos.x, pos.y, pos.z
-        );
-
-        // print geodetic position at time
-        let (lat, lon, alt) = self.geodetic_position_at_time(time);
-        println!(
-            "  Geo         : {:.4}°, {:.4}° at {:.1} km",
-            lat, lon, alt
-        );
-
-        // print velocity at time
-        let (vx, vy, vz) = self.velocity_at_time(time);
-        let speed = (vx.powi(2) + vy.powi(2) + vz.powi(2)).sqrt();
-        println!(
-            "  Velocity    : {:.2} km/s", speed
-        );
-
-        println!();
-    }
-
-    // // convenience method using current time
-    // #[allow(dead_code)]
-    // pub fn print(&self) {
-    //     self.print_at_time(Utc::now());
-    // }
 }
 
 // UTILS
@@ -226,38 +186,22 @@ pub fn sgp4_to_cartesian(prediction: &Prediction) -> Vec3 {
     )
 }
 
-// async function to actually fetch and parse the satellite data
+// fetch satellite data
+// async
 pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
-    // DEV: toggle to select source
-    let load_from_file = true;
-
-    let tle_data = if load_from_file {
-        // load from local file
-        let path = Path::new("assets/data/gnss.txt");
-        match fs::read_to_string(path) {
-            Ok(contents) => {
-                println!("Loaded TLE data from local file: {:?}", path);
-                contents
-            }
-            Err(err) => {
-                eprintln!("Failed to read TLE file: {err}");
-                return Ok(vec![]);
-            }
+    let path = Path::new("assets/data/gnss.txt");
+    let tle_data = match fs::read_to_string(path) {
+        Ok(contents) => {
+            println!("Loaded TLE data from local file: {:?}", path);
+            contents
         }
-    } else {
-        // load from remote URL (keep this intact)
-        let url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=gnss&FORMAT=tle";
-        let response = reqwest::Client::new()
-            .get(url)
-            .header(USER_AGENT, "apogeetrak-satellite-tracker")
-            .send()
-            .await?;
-
-        println!("Fetched TLE data from remote URL: {url}");
-        response.text().await?
+        Err(err) => {
+            eprintln!("Failed to read TLE file: {err}");
+            return Ok(vec![]);
+        }
     };
-
-    // parse the TLE data
+    
+    // parse TLE data into satellites
     let lines: Vec<&str> = tle_data.lines().collect();
     let mut satellites: Vec<Satellite> = Vec::new();
 
@@ -269,6 +213,6 @@ pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
         }
     }
 
-    println!("Successfully parsed {} satellites.", satellites.len());
+    println!("Parsed {} satellites", satellites.len());
     Ok(satellites)
 }

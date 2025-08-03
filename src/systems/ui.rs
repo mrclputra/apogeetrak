@@ -12,6 +12,7 @@ impl Plugin for UIPlugin {
                 update_satellite_count, 
                 update_datetime, 
                 handle_time_control,
+                advance_sim_time,
             ));
     }
 }
@@ -270,20 +271,27 @@ fn update_satellite_count(
 // update the datetime display with current UTC time
 fn update_datetime(
     mut text_query: Query<&mut Text, With<DateTimeDisplay>>,
-    time_state: ResMut<TimeState>,
+    time_state: Res<TimeState>,
 ) {
     if let Ok(mut text) = text_query.single_mut() {
-        // Create a fixed datetime (e.g., 2025-01-01 12:00:00 UTC)
-        let fixed_datetime = chrono::DateTime::parse_from_rfc3339("2000-01-01T12:00:00Z")
-            .unwrap()
-            .with_timezone(&Utc);
-        
-        // format
-        // text.0 = format!("Time: {} UTC", fixed_datetime.format("%Y-%m-%d %H:%M:%S"));
         text.0 = format!(
             "Time: {} UTC x{:.1}",
-            fixed_datetime.format("%Y-%m-%d %H:%M:%S"),
+            time_state.sim_time.format("%Y-%m-%d %H:%M:%S"),
             time_state.speed_mult,
         );
     }
+}
+
+fn advance_sim_time(
+    time: Res<Time>,
+    mut time_state: ResMut<TimeState>,
+) {
+    if time_state.is_paused {
+        return;
+    }
+
+    let delta_seconds = time.delta_secs_f64();
+    let sim_delta = chrono::Duration::microseconds((delta_seconds * time_state.speed_mult * 1_000_000.0) as i64);
+
+    time_state.sim_time = time_state.sim_time + sim_delta;
 }
