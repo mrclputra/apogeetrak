@@ -6,6 +6,7 @@
 //! NORAD datasets are included in the assets folder
 
 use bevy::prelude::*;
+use bevy::window::{PresentMode, WindowMode};
 use bevy::pbr::wireframe::{WireframePlugin, WireframeConfig};
 
 pub mod config;
@@ -23,7 +24,16 @@ pub struct Sun;
 
 fn main() -> bevy::app::AppExit {
     App::new()
-        .add_plugins(DefaultPlugins.set(AssetPlugin {
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "ApogeeTrak".into(),
+                resolution: (1920.0, 1080.0).into(),
+                present_mode: PresentMode::AutoVsync,
+                mode: WindowMode::BorderlessFullscreen(bevy::window::MonitorSelection::Primary),
+                ..default()
+            }),
+            ..default()
+        }).set(AssetPlugin {
             watch_for_changes_override: Some(true),
             ..default()
         }))

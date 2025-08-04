@@ -10,7 +10,7 @@ This was a fun first project for me in familiarizing myself with the Bevy workfl
 ## Install
 
 ```bash
-git clone https://github.com/yourusername/bevy_tracksat.git
+git clone https://github.com/mrclputra/bevy_tracksat.git
 cd bevy_tracksat
 cargo run --release
 ```

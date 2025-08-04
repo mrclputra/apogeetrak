@@ -17,6 +17,7 @@ impl Plugin for UIPlugin {
                 update_satellite_count, 
                 update_datetime, 
                 handle_time_control,
+                handle_exit,
             ));
     }
 }
@@ -38,6 +39,16 @@ pub struct BackwardButton;
 
 #[derive(Component)]
 pub struct ForwardButton;
+
+// system exit
+fn handle_exit(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut exit: EventWriter<AppExit>
+) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        exit.write(AppExit::Success);
+    }
+}
 
 pub fn setup(
     mut commands: Commands,

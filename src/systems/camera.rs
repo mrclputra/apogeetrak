@@ -2,7 +2,6 @@
 //! 
 //! Built my own camera module
 //! to figure it out
-//! Now with panning support!
 
 use bevy::prelude::*;
 use bevy::input::mouse::MouseWheel;
@@ -96,7 +95,7 @@ impl OrbitCamera {
         self
     }
 
-    // reset camera to sensible defaults
+    // reset camera
     pub fn reset(&mut self) {
         self.target_radius = 15000.0;
         self.target_angle = 0.0;
