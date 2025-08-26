@@ -90,21 +90,21 @@ pub fn update(
                 altitude
             );
 
-            commands.entity(container).with_children(|parent| {
-                parent.spawn((
-                    Text::new(label_text),
-                    TextFont { font_size: 8.0, ..default() },
-                    TextColor(Color::WHITE),
-                    Node {
-                        position_type: PositionType::Absolute,
-                        left: Val::Px(pos.x),
-                        top: Val::Px(pos.y),
-                        ..default()
-                    },
-                    BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)), // textbox background
-                    SatelliteLabel { satellite_entity: sat_entity },
-                ));
-            });
+            commands.entity(container).insert(children![(
+                Text::new(label_text),
+                TextFont::from_font_size(8.0),
+                TextColor(Color::WHITE),
+                Node {
+                    position_type: PositionType::Absolute,
+                    left: Val::Px(pos.x),
+                    top: Val::Px(pos.y),
+                    ..default()
+                },
+                BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.7)), // textbox background
+                SatelliteLabel {
+                    satellite_entity: sat_entity,
+                },
+            )]);
         }
     }
 }

@@ -97,8 +97,10 @@ impl Satellite {
             let point_time = base_time + Duration::milliseconds((time_offset_seconds * 1000.0) as i64);
 
             if let Some(minutes_since_epoch) = self.minutes_since_epoch(point_time) {
-                let prediction = self.constants.propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))
-                    .unwrap_or_else(|_| Prediction {
+                let prediction = self
+                    .constants
+                    .propagate(sgp4::MinutesSinceEpoch(minutes_since_epoch))
+                    .unwrap_or(Prediction {
                         position: [0.0, 0.0, 0.0],
                         velocity: [0.0, 0.0, 0.0],
                     });
@@ -203,10 +205,10 @@ pub async fn fetch_satellites() -> Result<Vec<Satellite>, Error> {
     let mut satellites: Vec<Satellite> = Vec::new();
 
     for chunk in lines.chunks(3) {
-        if chunk.len() == 3 {
-            if let Some(satellite) = Satellite::parse(chunk[0], chunk[1], chunk[2]) {
-                satellites.push(satellite);
-            }
+        if chunk.len() == 3
+            && let Some(satellite) = Satellite::parse(chunk[0], chunk[1], chunk[2])
+        {
+            satellites.push(satellite);
         }
     }
 
