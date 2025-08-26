@@ -211,24 +211,24 @@ fn handle_time_control(
     }
 
     // handle backward button
-    if let Ok(interaction) = backward_query.single() {
-        if *interaction == Interaction::Pressed {
-            time_state.step_backward();
-        }
+    if let Ok(interaction) = backward_query.single()
+        && *interaction == Interaction::Pressed
+    {
+        time_state.step_backward();
     }
 
     // handle reset button
-    if let Ok(interaction) = reset_query.single() {
-        if *interaction == Interaction::Pressed {
-            time_state.reset_to_normal();
-        }
+    if let Ok(interaction) = reset_query.single()
+        && *interaction == Interaction::Pressed
+    {
+        time_state.reset_to_normal();
     }
 
     // handle forward button
-    if let Ok(interaction) = forward_query.single() {
-        if *interaction == Interaction::Pressed {
-            time_state.step_forward();
-        }
+    if let Ok(interaction) = forward_query.single()
+        && *interaction == Interaction::Pressed
+    {
+        time_state.step_forward();
     }
 }
 
